@@ -1,0 +1,26 @@
+import shoot_basic.txt
+
+0 {
+	pos 50, 50
+}
+
+update {
+	//200フレームで行動ループ
+	if count > 200
+		count = 0
+	endif
+
+	if count = 50
+		call *shoot_player	//自機狙いで発射
+	endif
+
+	if count = 100
+		call *shoot_360		//全方位に発射
+	endif
+
+	if count = 150
+		call *shoot_down	//真下に発射
+	endif
+
+	count++
+}

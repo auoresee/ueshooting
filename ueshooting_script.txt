@@ -1,0 +1,151 @@
+スクリプト:
+	言語仕様:	BASIC系の文法
+			一行に命令は一つのみ(なくてもよい)
+			
+			文法
+				(例)	0 {
+						pos 50,50
+					}
+					50 {
+						let X = 20
+						let Y = 30
+					}
+					test {
+						let I = 1
+						sin x,20
+						let J = x
+					}
+					update {
+						effect 5,X,Y,10.5
+						if X <= 180
+							call *test
+						else
+							end
+						ifend
+						//処理おわり
+					}
+						
+			変数 a-l int
+				m,n,o boolean
+				p-z double
+				B,C string
+				D,E int[50]
+				F,G double[50]
+				(特殊)	X,Y 座標 double
+						I,J 速度(vx,vy) double
+						V 速さ(sqrt(vx^2+vy^2)) double
+						A (運動の)角度(三角関数に準拠,度表記) double
+						R 機体の向き double
+						H 体力(HP) double
+						P 円周率(Math.PI) double
+						T ステージ開始からの時間 int
+						N 代入先の変数として指定されたとき、どこにも代入しない(null)。 型なし
+			コマンド 2-8文字
+				注:	コマンド名はスクリプトで定義された変数との重複を防ぐため、同種のコマンドと長さをそろえるために
+						短縮することがある。
+					mov / let / letv はletに統合された。
+
+				基本
+				注	00	move 代入 var(any) = any
+					01	print 変数表示 var
+					02	push スタックにデータを積む any
+					03	pop スタックからデータを取り出す var
+					04	stype スタック先頭データのタイプ参照(int=0,bool=1,double=2,string=3) var(int)
+					
+				制御構文
+				予約	20	// got p1に進む label
+					21	call p1にサブルーチンジャンプ proc
+					22	jump 条件分岐(条件を満たせばp3にサブルーチンジャンプ) any (==,!=,>,<,>=,<=,||,&&) any,proc
+					23	if 条件分岐(条件を満たさなければelseの次の行まで進む) any (==,!=,>,<,>=,<=,||,&&) any
+					24	bif 条件分岐(p1==falseならelseの次の行まで進む) boolean
+					2C	elseif 条件分岐 any (==,!=,>,<,>=,<=,||,&&) any
+					25	else (ifendの次の行まで進む)
+					26	ifend if構文終わり
+					27	while ループ(条件を満たす間,前判定) any (==,!=,>,<,>=,<=,||,&&) any
+					28	for ループ(p1=カウンタ,p2=初期値,p3=最大値,p4=増加量) var(d/i), d/i, d/i, d/i
+					29	lend ループ終了
+					2A	break ループから抜ける
+					2B	continue ループの初めに戻る
+					
+				算術 (結果はvarに代入(intにキャスト
+					40	let 代入/演算
+				注	41	letv 代入&演算 var(double/int) (+,-,*,/,%)= double/int
+						letv var(bool) =! bool
+				予約	42	//add / sub / mul / div 演算　var(double/int),double/int,double/int (ゼロ除算はエラー)
+					43	cmp 比較 var(boolean) any (==,&&,||,>,<,>=,<=) any
+				予約	44	//inc / dec var(double/int),double/int 加算 / 減算(+= / -=)
+					45	sqrt 平方根 var(d/i),d/i (負の数はエラー)
+					46	exp 累乗 var(d/i),d/i,d/i
+							xが負の数でyが整数でない場合や、xが0でyが0未満ならエラー
+					47	torect (結果はp,qに代入) (r,θ(度)) -> (x,y) d/i,d/i
+					48	topolar (結果はp,qに代入) (x,y) -> (r,θ(度)) d/i,d/i
+					49	distance 距離(sqrt(x^2+y^2)) var(d/i),d/i,d/i
+					4A	sin 三角関数(度) var(d/i),d/i
+					4B	cos 三角関数(度) var(d/i),d/i
+					4C	tan 三角関数(度) var(d/i),d/i
+					4D	atan 逆三角関数(度) var(d/i),d/i
+					4E	atan2 逆三角関数(度) var(d/i),d/i,d/i
+					4F	log 対数(底=p1) var(d/i),d/i,d/i		定数e(ネイピア数)も実装予定
+					50	random 乱数(0 <= x < 1) var(d/i)
+					51	random2 乱数(p1 <= x < p2) var(d/i),d/i,d/i
+					
+				システム
+					(戻り値なし)
+						70	debug デバッグ画面を開き、停止
+						71	return calしたところに戻る
+						72	end 自機を消去し、終了(寿命判定扱い)
+						73	die 自機を消去し、終了(破壊判定扱い)
+						74	del ID=p1の敵を消去(寿命判定扱い) int
+						75	kil ID=p1の敵を消去(破壊判定扱い) int
+								※end,die,del,kilをdestroy～(破壊/寿命の敵の削除)の間に実行すると
+									死亡判定イベント(destroy,disappear,final)が実行されないことがある。
+						76	hide 自機を見えなくする
+						77	appear 自機を見えるようにする
+						78	skip p1フレームの間、毎フレーム行うイベント(updateなど)を飛ばす int
+						79	effect エフェクト(p1=タイプ,p2=X座標,p3=Y座標,p4=パラメータ) int,d/i,d/i,d/i
+						80	event イベント(p1=id,p2-p4=パラメータ) int,d/i,d/i,d/i
+						81	sound 音声の再生(p1=カテゴリ,p2=id,p3=音量) string,int,d/i
+						82	bgm BGMの変更(p1=ファイル名) string
+						83	collide 衝突判定をするかの変更(false=しない、true=する)(デフォルト=true) boolean
+						8F	stgclear ステージクリア(次のステージに進む)
+						B0	shoot 弾の発射(p1=タイプ,p2=サブタイプ,p3=速度,p4=角度,p5=パラメータ) int,int,d/i,d/i,d/i
+						B1	setshot 弾の発射(p1=タイプ,p2=サブタイプ,p3=X座標,p4=Y座標,p5=速度,p6=角度,p7=パラメータ) int,int,d/i,d/i,d/i,d/i,d/i
+					(結果は指定した変数に代入)
+						B2	getid 最後に発射した弾のIDを取得 var(int)
+					(戻り値なし)
+						B3	sspeed 弾の速度の変更(vx,vy) int,d/i,d/i
+						B4	sspeedp 弾の速度の変更(r,θ(度)) int,d/i,d/i
+						B8	sangle 弾の角度(進行方向)を変更 int,d/i
+						B9	srotate 弾の角度(画像の向き)を変更 int,d/i
+					(結果は指定した変数に代入)
+						B5	vspeed 弾の速度の取得(vx,vy) int,var(d/i),var(d/i)
+						B6	vspeedp 弾の速度の取得(r,θ(度)) int,var(d/i),var(d/i)
+						B7	vrotate 弾の角度(画像の向き)を取得 int,var(d/i)
+					(戻り値なし)注:タイプによってはp,qに結果が代入される
+						BA	ctrlm 弾の制御(移動関係)(p1=ID,p2=タイプ,p3-p5=パラメータ) int,int,d/i,d/i,d/i
+						BB	ctrla 弾の制御(p1=ID,p2=タイプ,p3-p5=パラメータ) int,int,d/i,d/i,d/i
+						
+					(結果は適当な変数に代入)
+						7A	dlg このターン以降、処理をプログラム(java)にまかせる(p1=呼び出し番号) int
+						7B	run プログラム(java)の関数を呼び出す(p1=メソッド名) string
+						7C	prm 追加パラメータ(スタック)にデータを積む any
+					(結果はp,qに代入)
+						90	pcoord プレイヤーの座標取得
+						91	pspeed プレイヤーの速度取得(vx,vy)
+						92	pspeedp プレイヤーの速度取得(r,θ(度))
+						
+					(デフォルト変数の代用)(戻り値なし)
+						A0	pos 座標変更(X=p1,Y=p2) d/i,d/i
+						A1	speed 速度変更(I=p1,J=p2) d/i,d/i
+						A2	speedp 速度変更(V=p1,A=p2) d/i,d/i
+						
+予定：
+	インクリメント/デクリメント演算子(++/--)
+	特殊変数の名称変更(複数文字)
+	letの省略、if文での多項式導入
+	if / bif / while / for 構文での中括弧の使用
+	C形式のfor構文[例: for(i=0;i<20;i++){	}
+	Shot型変数(構造体)
+	関数(戻り値は代入限定)
+	変数の定義
+	スコープ

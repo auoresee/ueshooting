@@ -1,0 +1,68 @@
+StageLoader:
+
+StageData:
+	int stage_num;
+	EnemySpawnData enemydata[?] : new;
+
+Stage:
+	int stage_index;
+	String stage_name;
+	int time_length;
+	EnemySpawnData enemydata[?] : new;
+	Stage()
+
+EnemySpawnData:
+	int spawn_x,spawn_y;
+	int enemy_type;
+	EnemyAI ai;
+
+virtual EnemyAI:
+	EnemyMovement moves[?] : new;
+	int shot_type;
+	int shot_interval;
+
+EnemyMovement:
+	int move_type;
+	int move_vector;
+	int move_speed;
+
+ステージファイルの構成:
+
+1.ヘッダ 8byte
+ a.シグネチャ('S','T',0x80,0x9a) 4byte
+ b.ステージ名のバイト数(int) 4byte
+ b.ステージ名(char[])
+
+2.ステージセクション
+ a.ステージ時間長(int) 4byte
+ b.背景画像パスのバイト数(int) 4byte
+ c.背景画像パス(char[])
+ d.BGMパスのバイト数(int) 4byte
+ e.BGMパス(char[])
+ f.開始フレーム(デバッグ用)(int) 4byte
+ g.デバッグフラグ(1=無敵)(byte) 1byte
+ h.デバッグ用予約領域 7byte
+ i.敵の数(int) 4byte
+ j.敵出現データリスト
+ 要素:
+  1.画像パスのバイト数(int) 4byte
+  2.画像パス(char[])
+  3.出現X座標(int) 4byte
+  4.出現Y座標(int) 4byte
+  5.出現タイミング(int) 4byte
+  6.敵カテゴリ(0=通常,1=中ボス,2=ボス)(byte) 1byte
+  7.敵タイプ(int) 4byte
+  8.体力(int) 4byte
+  9.敵AI
+  要素:
+   1.スクリプトの長さ(int) 4byte
+   2.スクリプト(リスト) ※仕様はueshooting_script.txtを参照
+ k.弾のスクリプトの数(int) 4byte
+ l.弾のスクリプトリスト
+ 要素:
+  1.サブタイプ(100番以降を使用すること)(int) 4byte
+  2.スクリプトの長さ(int) 4byte
+  3.スクリプト(リスト) ※仕様はueshooting_script.txtを参照
+ m.グローバル関数(ルートは共通。リストではない)
+  1.スクリプトの長さ(int) 4byte
+  2.スクリプト(リスト) ※仕様はueshooting_script.txtを参照
