@@ -1,0 +1,19 @@
+package ueshooting.script;
+
+public enum ParameterType {
+	ANY,
+	INT,
+	DOUBLE_OR_INT,
+	DOUBLE_INT_BOOLEAN,
+	STRING,
+	BOOLEAN,
+	PROCEDURE,
+	VAR_ANY,
+	VAR_INT,
+	VAR_DOUBLE,
+	VAR_DOUBLE_OR_INT,
+	VAR_DOUBLE_INT_BOOLEAN,
+	VAR_STRING,
+	VAR_BOOLEAN,
+	OPERATOR,
+}
