@@ -1,19 +1,24 @@
-�E�N�����@
- UEShooting.bat ���_�u���N���b�N
+・起動方法
+ UEShooting.bat をダブルクリック
+ 
+ ・操作方法
+ 移動：十字キー
+ 低速移動：左Shiftキー
+ 弾の発射：Zキー
 
-�E�X�e�[�W�̓ǂݍ���
- �N������ƁAstage�t�H���_�̒���stage1.dat�������I�ɓǂݍ��ށB
- ���̃t�@�C��������̃X�e�[�W�t�@�C���ɒu���������
- ����X�e�[�W���v���C�ł���B
+・ステージの読み込み
+ 起動すると、stageフォルダの中のstage1.datを自動的に読み込む。
+ このファイルを自作のステージファイルに置き換えれば
+ 自作ステージをプレイできる。
 
- �܂��A�ǂݍ��ރt�@�C������stage�t�H���_�̒���stage_list.txt��
- �L�q����Ă���B
- 1�s�ڂ͓ǂݍ��ރX�e�[�W�̐����������A����1�X�e�[�W�����ǂݍ��݂ł��Ȃ��̂�
- �K��1�ɂ��Ă������ƁB
- 2�s�ڂ�stage�t�H���_���̓ǂݍ��ރt�@�C�����w�肷��B
- �f�t�H���g�ł́A
+ また、読み込むファイル名はstageフォルダの中のstage_list.txtに
+ 記述されている。
+ 1行目は読み込むステージの数を示すが、現在1ステージしか読み込みできないので
+ 必ず1にしておくこと。
+ 2行目にstageフォルダ内の読み込むファイルを指定する。
+ デフォルトでは、
 
- 1�s��:1
- 2�s��:stage1.dat
+ 1行目:1
+ 2行目:stage1.dat
 
- �ƂȂ��Ă���B
+ となっている。
