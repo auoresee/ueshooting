@@ -114,7 +114,7 @@ public class ScriptLoader
 			for(int i = 0;i < format.format_specifiers.length;i++){
 				if(pos >= source.length()) throw new ScriptSyntaxException("Expecting argument", pos);
 				parent.addChild(getParameter(source, format.format_specifiers[i]));
-				System.out.println(pos);
+				//System.out.println(pos);
 			}
 		}
 		seekNextLine(source);

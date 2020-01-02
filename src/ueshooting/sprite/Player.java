@@ -26,6 +26,7 @@ public class Player extends Mob {
 	private int invincible_time = 0;
 	private int invincible_end = 90;
 	public boolean debug_invincible = false;
+	private PlayerBounds playerBoundsSprite = null;
 	public Player(int p1, int p2, boolean debug_invincible) {
 		super(0, p1, p2);
 		if(scroll == ScrollDirection.HORIZONTAL)
@@ -147,9 +148,15 @@ public class Player extends Mob {
 		y_speed = 0;
 		if(key_shift >= SystemMain.KEY_ON){
 			speed = 3;
+			
+			// あたり判定を表示
+			showPlayerBounds(true, map);
 		}
 		else {
 			speed = 6;
+			
+			// あたり判定を非表示
+			showPlayerBounds(false, map);
 		}
 		if(key_left >= SystemMain.KEY_ON){
 			x_speed -= speed ;
@@ -285,6 +292,7 @@ public class Player extends Mob {
 		hp = 1;
 		invincible_mode = true;
 		flash = true;
+		showPlayerBounds(false, null);
 	}
 
 	public void addGameScore(int p) {
@@ -298,5 +306,23 @@ public class Player extends Mob {
 	public int getLife() {
 		// TODO Auto-generated method stub
 		return life;
+	}
+	
+	/// プレイヤーのあたり判定を表示
+	/// @param show true なら表示. false なら非表示.
+	/// @param map true の場合は必須. false の場合は null でよい.
+	private void showPlayerBounds(boolean show, Map map) {
+		if (show) {
+			if (playerBoundsSprite == null) {
+				playerBoundsSprite = new PlayerBounds(this);
+				map.setSprite(playerBoundsSprite);
+			} else {
+				playerBoundsSprite.visiblity = true;
+			}
+		} else {
+			if (playerBoundsSprite != null) {
+				playerBoundsSprite.visiblity = false;
+			}
+		}
 	}
 }
