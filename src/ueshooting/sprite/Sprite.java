@@ -36,8 +36,10 @@ public abstract class Sprite implements GameObject {
 	public static void init(){
 		chip_names.put(SpriteCategory.SHOT, "shot");
 		chip_names.put(SpriteCategory.NPC, "mob");
+		chip_names.put(SpriteCategory.OTHER, "other");
 		chips.put(SpriteCategory.SHOT, new ArrayList<Image>());
 		chips.put(SpriteCategory.NPC, new ArrayList<Image>());
+		chips.put(SpriteCategory.OTHER, new ArrayList<Image>());
 	}
 	
 	public void collision_check(Map map,Sprite sprite,double distance){

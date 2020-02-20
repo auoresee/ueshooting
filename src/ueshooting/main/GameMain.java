@@ -288,6 +288,7 @@ public class GameMain extends JFrame implements ActionListener,KeyListener,Playe
 			drawer.load_infobar_bgimage(image);
 			load_sprite_chips(SpriteCategory.SHOT);
 			load_sprite_chips(SpriteCategory.NPC);
+			load_sprite_chips(SpriteCategory.OTHER);
 			
 			//load_map(starting_map);
 		} catch (IOException e) {

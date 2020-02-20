@@ -15,10 +15,10 @@ public class ScriptLoader
 	private final String operator_list[] = {"+","-","*","/","^","%","+=","-=","*=","/=","%=","==","=","!=","=!",">","<",">=","<=","&&","||","(",")"};
 	
 	/**
-	 * ƒXƒNƒŠƒvƒg‚ğ‰ğÍ‚µ\•¶–Ø‚ğ¶¬‚·‚é
-	 * ƒ‹[ƒg(ŠK‘w0)
-	 * @param source ƒXƒNƒŠƒvƒg‚Ìƒ\[ƒX
-	 * @return Script \•¶–Ø
+	 * ã‚¹ã‚¯ãƒªãƒ—ãƒˆã‚’è§£æã—æ§‹æ–‡æœ¨ã‚’ç”Ÿæˆã™ã‚‹
+	 * ãƒ«ãƒ¼ãƒˆ(éšå±¤0)
+	 * @param source ã‚¹ã‚¯ãƒªãƒ—ãƒˆã®ã‚½ãƒ¼ã‚¹
+	 * @return Script æ§‹æ–‡æœ¨
 	 * @throws ScriptSyntaxException
 	 */
 	public Script generateTree(String source) throws ScriptSyntaxException
@@ -34,7 +34,7 @@ public class ScriptLoader
 		return root;
 	}
 	
-	//ŠK‘w1
+	//éšå±¤1
 	private TreeElement generateTreeLabel(String source) throws ScriptSyntaxException {
 		TreeElement parent = null;
 
@@ -92,7 +92,7 @@ public class ScriptLoader
 		return parent;
 	}
 
-	//ŠK‘w2
+	//éšå±¤2
 	private TreeElement generateTreeLine(String source) throws ScriptSyntaxException {
 		ScriptToken token = getToken(source);
 		if(token.body.equals("}")) {
@@ -136,7 +136,7 @@ public class ScriptLoader
 			}
 			else {
 				TreeElement tmp = new TreeElement(TreeElementType.EXPRESSION);
-				ltmp = toPostfixNotation(ltmp);	//‹tƒ|[ƒ‰ƒ“ƒh‡‚É•ÏŠ·
+				ltmp = toPostfixNotation(ltmp);	//é€†ãƒãƒ¼ãƒ©ãƒ³ãƒ‰é †ã«å¤‰æ›
 				tmp.addChilds(ltmp);
 				ret.add(tmp);
 			}
@@ -148,27 +148,27 @@ public class ScriptLoader
 	private List<TreeElement> getAssignmentExpression(String source) throws ScriptSyntaxException {
 		List<TreeElement> ret = new ArrayList<>();
 		
-		//¶•Ó‚Ì•Ï”‚ğæ“¾
+		//å·¦è¾ºã®å¤‰æ•°ã‚’å–å¾—
 		ParameterFormatSpecifier format = new ParameterFormatSpecifier(ParameterType.VAR_ANY);
 		TreeElement child = getParameter(source, format);
 		//ParameterType varType = getVariableParameterType((ScriptSpecialVariable) child.data);
 		ret.add(child);
 		
-		//varType‚ğ•Ï”Œ^¨’lŒ^‚É•ÏŠ· (Œã‚Ìˆ—‚Ì‚½‚ß)@
+		//varTypeã‚’å¤‰æ•°å‹â†’å€¤å‹ã«å¤‰æ› (å¾Œã®å‡¦ç†ã®ãŸã‚)ã€€
 		/*if(varType == ParameterType.VAR_ANY) varType = ParameterType.ANY;
 		if(varType == ParameterType.VAR_INT || varType == ParameterType.VAR_DOUBLE) varType = ParameterType.DOUBLE_OR_INT;
 		if(varType == ParameterType.VAR_STRING) varType = ParameterType.STRING;
 		if(varType == ParameterType.VAR_BOOLEAN) varType = ParameterType.BOOLEAN;*/
 		
-		//‘ã“ü‰‰Zq‚ğæ“¾
+		//ä»£å…¥æ¼”ç®—å­ã‚’å–å¾—
 		format = new ParameterFormatSpecifier("=","+=","-=","*=","/=","%=","=!");
 		child = getParameter(source, format);
-		//if(!isOperatorCompatible((String) child.data, varType)){	//g‚¦‚È‚¢‰‰Zq‚Ì‘g‚İ‡‚í‚¹(•¶š—ñŒ^‚É-=‚È‚Ç)‚È‚çƒGƒ‰[
+		//if(!isOperatorCompatible((String) child.data, varType)){	//ä½¿ãˆãªã„æ¼”ç®—å­ã®çµ„ã¿åˆã‚ã›(æ–‡å­—åˆ—å‹ã«-=ãªã©)ãªã‚‰ã‚¨ãƒ©ãƒ¼
 		//	throw new ScriptSyntaxException(String.format("Incompatible operator %s with type %s", (String) child.data, varType.toString()), pos);
 		//}
 		ret.add(child);
 		
-		//‰E•Ó‚ğæ“¾
+		//å³è¾ºã‚’å–å¾—
 		List<TreeElement> elements = getExpression(source, ParameterType.ANY);
 		elements = toPostfixNotation(elements);
 		child = new TreeElement(TreeElementType.EXPRESSION);
@@ -178,8 +178,8 @@ public class ScriptLoader
 	}
 
 	/**
-	 * ®‚ğˆ—‚µƒg[ƒNƒ“‚ÌƒŠƒXƒg‚ğæ“¾
-	 * (‹tƒ|[ƒ‰ƒ“ƒh‡‚É‚Í‚µ‚È‚¢)
+	 * å¼ã‚’å‡¦ç†ã—ãƒˆãƒ¼ã‚¯ãƒ³ã®ãƒªã‚¹ãƒˆã‚’å–å¾—
+	 * (é€†ãƒãƒ¼ãƒ©ãƒ³ãƒ‰é †ã«ã¯ã—ãªã„)
 	 * @param source
 	 * @param pType
 	 * @return
@@ -241,12 +241,12 @@ public class ScriptLoader
 		return ret;
 	}
 	
-	// ‰‰Zq
-	// —Dæ‡ˆÊ : ‰‰Zq : Œ‹‡«
-	// 4 :   !   : ‰EŒ‹‡«
-	// 3 : * / % : ¶Œ‹‡«
-	// 2 :  + -  : ¶Œ‹‡«
-	// 1 :   =   : ‰EŒ‹‡«
+	// æ¼”ç®—å­
+	// å„ªå…ˆé †ä½ : æ¼”ç®—å­ : çµåˆæ€§
+	// 4 :   !   : å³çµåˆæ€§
+	// 3 : * / % : å·¦çµåˆæ€§
+	// 2 :  + -  : å·¦çµåˆæ€§
+	// 1 :   =   : å³çµåˆæ€§
 	int op_preced(String c)
 	{
 	    switch (c) {
@@ -265,10 +265,10 @@ public class ScriptLoader
 	boolean op_left_assoc(String c)
 	{
 	    switch (c) {
-	        // ¶Œ‹‡«
+	        // å·¦çµåˆæ€§
 	        case "*": case "/": case "%": case "+": case "-":
 	            return true;
-	        // ‰EŒ‹‡«
+	        // å³çµåˆæ€§
 	        case "=": case "!":
 	            return false;
 	    }
@@ -276,7 +276,7 @@ public class ScriptLoader
 	}
 	
 	/**
-	 * ®‚ğ‹tƒ|[ƒ‰ƒ“ƒh‹L–@‚É•ÏŠ·
+	 * å¼ã‚’é€†ãƒãƒ¼ãƒ©ãƒ³ãƒ‰è¨˜æ³•ã«å¤‰æ›
 	 * 
 	 * @param input
 	 * @return
@@ -288,21 +288,21 @@ public class ScriptLoader
 	    TreeElement c;
 		char outpos;// = output;
 	 
-		TreeElement[] stack = new TreeElement[32];       // ‰‰ZqƒXƒ^ƒbƒN
-	    int stackLength = 0;  // ƒXƒ^ƒbƒN’·i[‚³j
-	    TreeElement stackCounter;              // ƒXƒ^ƒbƒN—v‘f‚Ì‹L˜^—p
+		TreeElement[] stack = new TreeElement[32];       // æ¼”ç®—å­ã‚¹ã‚¿ãƒƒã‚¯
+	    int stackLength = 0;  // ã‚¹ã‚¿ãƒƒã‚¯é•·ï¼ˆæ·±ã•ï¼‰
+	    TreeElement stackCounter;              // ã‚¹ã‚¿ãƒƒã‚¯è¦ç´ ã®è¨˜éŒ²ç”¨
 	 
 	    while (index < input.size()) {
-	        // “ü—ÍƒXƒgƒŠ[ƒ€‚©‚çƒg[ƒNƒ“‚ğ1‚Â“Ç‚İ‚Ş
+	        // å…¥åŠ›ã‚¹ãƒˆãƒªãƒ¼ãƒ ã‹ã‚‰ãƒˆãƒ¼ã‚¯ãƒ³ã‚’1ã¤èª­ã¿è¾¼ã‚€
 	        c = input.get(index);
 	        if (c.type.isLiteral() || c.type == TreeElementType.VARIABLE) {
-	            // ƒg[ƒNƒ“‚ª”’li¯•Êqj‚È‚çAo—ÍƒLƒ…[‚É’Ç‰Á‚·‚é
+	            // ãƒˆãƒ¼ã‚¯ãƒ³ãŒæ•°å€¤ï¼ˆè­˜åˆ¥å­ï¼‰ãªã‚‰ã€å‡ºåŠ›ã‚­ãƒ¥ãƒ¼ã«è¿½åŠ ã™ã‚‹
 	            output.add(c);
 	        } else if (c.type == TreeElementType.FUNCTION_CALL) {
-	            // ƒg[ƒNƒ“‚ªŠÖ”‚È‚çAƒXƒ^ƒbƒN‚ÉƒvƒbƒVƒ…‚·‚éB
+	            // ãƒˆãƒ¼ã‚¯ãƒ³ãŒé–¢æ•°ãªã‚‰ã€ã‚¹ã‚¿ãƒƒã‚¯ã«ãƒ—ãƒƒã‚·ãƒ¥ã™ã‚‹ã€‚
 	            stack[stackLength++] = c;
 	        } else if (((String)c.data).equals(",")) {
-	            // ƒg[ƒNƒ“‚ªŠÖ”‚Ìˆø”‚ÌƒZƒpƒŒ[ƒ^i—á‚¦‚ÎƒJƒ“ƒ}j‚Ìê‡
+	            // ãƒˆãƒ¼ã‚¯ãƒ³ãŒé–¢æ•°ã®å¼•æ•°ã®ã‚»ãƒ‘ãƒ¬ãƒ¼ã‚¿ï¼ˆä¾‹ãˆã°ã‚«ãƒ³ãƒï¼‰ã®å ´åˆ
 	            boolean pe = false;
 	            while (stackLength > 0) {
 	                stackCounter = stack[stack.length - 1];
@@ -310,29 +310,29 @@ public class ScriptLoader
 	                    pe = true;
 	                    break;
 	                } else {
-	                    // ƒXƒ^ƒbƒN‚Ìƒgƒbƒv‚Ìƒg[ƒNƒ“‚ª¶Š‡ŒÊ‚É‚È‚é‚Ü‚Å
-	                    // ƒXƒ^ƒbƒNã‚Ì‰‰Zq‚ğo—ÍƒLƒ…[‚Éƒ|ƒbƒv‚µ‘±‚¯‚é
+	                    // ã‚¹ã‚¿ãƒƒã‚¯ã®ãƒˆãƒƒãƒ—ã®ãƒˆãƒ¼ã‚¯ãƒ³ãŒå·¦æ‹¬å¼§ã«ãªã‚‹ã¾ã§
+	                    // ã‚¹ã‚¿ãƒƒã‚¯ä¸Šã®æ¼”ç®—å­ã‚’å‡ºåŠ›ã‚­ãƒ¥ãƒ¼ã«ãƒãƒƒãƒ—ã—ç¶šã‘ã‚‹
 	                	output.add(stackCounter);
 	                    stackLength--;
 	                }
 	            }
-	            // ¶Š‡ŒÊ‚ªo‚Ä‚±‚È‚©‚Á‚½ê‡A‚·‚È‚í‚¿ƒZƒpƒŒ[ƒ^‚ÌˆÊ’u‚ª•Ï‚¾‚Á‚½ê‡
-	            // ‚ ‚é‚¢‚ÍŠ‡ŒÊ‚ª³‚µ‚­‘Î‰‚µ‚Ä‚¢‚È‚¢ê‡
+	            // å·¦æ‹¬å¼§ãŒå‡ºã¦ã“ãªã‹ã£ãŸå ´åˆã€ã™ãªã‚ã¡ã‚»ãƒ‘ãƒ¬ãƒ¼ã‚¿ã®ä½ç½®ãŒå¤‰ã ã£ãŸå ´åˆ
+	            // ã‚ã‚‹ã„ã¯æ‹¬å¼§ãŒæ­£ã—ãå¯¾å¿œã—ã¦ã„ãªã„å ´åˆ
 	            if (!pe) {
-	                System.out.printf("ƒGƒ‰[FƒZƒpƒŒ[ƒ^‚©Š‡ŒÊ‚Ì•sˆê’v\n");
+	                System.out.printf("ã‚¨ãƒ©ãƒ¼ï¼šã‚»ãƒ‘ãƒ¬ãƒ¼ã‚¿ã‹æ‹¬å¼§ã®ä¸ä¸€è‡´\n");
 	                return null;
 	            }
 	        } else if (c.type == TreeElementType.OPERATOR && !((String)c.data).equals("(") && !((String)c.data).equals(")")) {
-	            // ƒg[ƒNƒ“‚ª‰‰Zq op1 ‚Ìê‡
+	            // ãƒˆãƒ¼ã‚¯ãƒ³ãŒæ¼”ç®—å­ op1 ã®å ´åˆ
 	            while (stackLength > 0) {
 	                stackCounter = stack[stackLength - 1];
-	                // op1 ‚ª¶Œ‹‡«‚Å—Dæ‡ˆÊ‚ª op2 ‚Æ“™‚µ‚¢‚©’á‚¢ê‡
-	                // ‚ ‚é‚¢‚Í op1 ‚Ì—Dæ‡ˆÊ‚ª op2 ‚æ‚è’á‚¢ê‡
-	                // ‰‰Zqƒg[ƒNƒ“ op2 ‚ªƒXƒ^ƒbƒN‚Ìƒgƒbƒv‚É‚ ‚éŠÔƒ‹[ƒv‚·‚éB
-	                // 1^2+3 ‚Ì‚æ‚¤‚È®‚ğ³‚µ‚­ 12^3+ ‚É•ÏŠ·‚·‚é‚½‚ß
-	                // "+" ‚Æ "^" ‚Í‰EŒ‹‡«‚Æ‚·‚éB
-	                // ‰‰Zq‚Ì—Dæ‡ˆÊ‚Ìˆá‚¢‚©‚çƒ|ƒbƒv‚·‚é‚©ƒvƒbƒVƒ…‚·‚é‚©‚ğ”»’f‚·‚éB
-	                // 2‚Â‚Ì‰‰Zq‚Ì—Dæ‡ˆÊ‚ª“™‚µ‚¢‚È‚çAŒ‹‡«‚©‚ç”»’f‚·‚éB
+	                // op1 ãŒå·¦çµåˆæ€§ã§å„ªå…ˆé †ä½ãŒ op2 ã¨ç­‰ã—ã„ã‹ä½ã„å ´åˆ
+	                // ã‚ã‚‹ã„ã¯ op1 ã®å„ªå…ˆé †ä½ãŒ op2 ã‚ˆã‚Šä½ã„å ´åˆ
+	                // æ¼”ç®—å­ãƒˆãƒ¼ã‚¯ãƒ³ op2 ãŒã‚¹ã‚¿ãƒƒã‚¯ã®ãƒˆãƒƒãƒ—ã«ã‚ã‚‹é–“ãƒ«ãƒ¼ãƒ—ã™ã‚‹ã€‚
+	                // 1^2+3 ã®ã‚ˆã†ãªå¼ã‚’æ­£ã—ã 12^3+ ã«å¤‰æ›ã™ã‚‹ãŸã‚
+	                // "+" ã¨ "^" ã¯å³çµåˆæ€§ã¨ã™ã‚‹ã€‚
+	                // æ¼”ç®—å­ã®å„ªå…ˆé †ä½ã®é•ã„ã‹ã‚‰ãƒãƒƒãƒ—ã™ã‚‹ã‹ãƒ—ãƒƒã‚·ãƒ¥ã™ã‚‹ã‹ã‚’åˆ¤æ–­ã™ã‚‹ã€‚
+	                // 2ã¤ã®æ¼”ç®—å­ã®å„ªå…ˆé †ä½ãŒç­‰ã—ã„ãªã‚‰ã€çµåˆæ€§ã‹ã‚‰åˆ¤æ–­ã™ã‚‹ã€‚
 	                if (stackCounter.type == TreeElementType.OPERATOR &&
 	                    ((op_left_assoc((String) c.data) && (op_preced((String) c.data) <= op_preced((String) stackCounter.data))) ||
 	                        (op_preced((String) c.data) < op_preced((String) stackCounter.data)))) {
@@ -343,32 +343,32 @@ public class ScriptLoader
 	                    break;
 	                }
 	            }
-	            // op1 ‚ğƒXƒ^ƒbƒN‚ÉƒvƒbƒVƒ…
+	            // op1 ã‚’ã‚¹ã‚¿ãƒƒã‚¯ã«ãƒ—ãƒƒã‚·ãƒ¥
 	            stack[stackLength++] = c;
 	        } else if (((String)c.data).equals("(")) {
-	            // ƒg[ƒNƒ“‚ª¶Š‡ŒÊ‚È‚çAƒXƒ^ƒbƒN‚ÉƒvƒbƒVƒ…
+	            // ãƒˆãƒ¼ã‚¯ãƒ³ãŒå·¦æ‹¬å¼§ãªã‚‰ã€ã‚¹ã‚¿ãƒƒã‚¯ã«ãƒ—ãƒƒã‚·ãƒ¥
 	            stack[stackLength++] = c;
 	        } else if (((String)c.data).equals(")")) {
-	            // ƒg[ƒNƒ“‚ª‰EŠ‡ŒÊ‚Ìê‡
+	            // ãƒˆãƒ¼ã‚¯ãƒ³ãŒå³æ‹¬å¼§ã®å ´åˆ
 	            boolean pe = false;
-	            // ƒXƒ^ƒbƒN‚Ìƒgƒbƒv‚É‚ ‚éƒg[ƒNƒ“‚ª¶Š‡ŒÊ‚É‚È‚é‚Ü‚Å
-	            // ƒXƒ^ƒbƒN‚©‚ço—ÍƒLƒ…[‚É‰‰Zq‚ğƒ|ƒbƒv‚µ‘±‚¯‚é
+	            // ã‚¹ã‚¿ãƒƒã‚¯ã®ãƒˆãƒƒãƒ—ã«ã‚ã‚‹ãƒˆãƒ¼ã‚¯ãƒ³ãŒå·¦æ‹¬å¼§ã«ãªã‚‹ã¾ã§
+	            // ã‚¹ã‚¿ãƒƒã‚¯ã‹ã‚‰å‡ºåŠ›ã‚­ãƒ¥ãƒ¼ã«æ¼”ç®—å­ã‚’ãƒãƒƒãƒ—ã—ç¶šã‘ã‚‹
 	            while (stackLength > 0) {
 	                stackCounter = stack[--stackLength];
 	                if (((String)stackCounter.data).equals("(")) {
-	                    // ƒXƒ^ƒbƒN‚©‚ç¶Š‡ŒÊ‚ğƒ|ƒbƒv‚·‚é‚ªAo—ÍƒLƒ…[‚É‚Í’u‚©‚È‚¢
+	                    // ã‚¹ã‚¿ãƒƒã‚¯ã‹ã‚‰å·¦æ‹¬å¼§ã‚’ãƒãƒƒãƒ—ã™ã‚‹ãŒã€å‡ºåŠ›ã‚­ãƒ¥ãƒ¼ã«ã¯ç½®ã‹ãªã„
 	                    pe = true;
 	                    break;
 	                } else {
 	                	output.add(stackCounter);
 	                }
 	            }
-	            // ƒXƒ^ƒbƒN‚ğ‘S•”Œ©‚Ä‚à¶Š‡ŒÊ‚É“’B‚µ‚È‚©‚Á‚½ê‡A¶‰E‚ÌŠ‡ŒÊ‚Ì•sˆê’v‚ª‚ ‚é‚±‚Æ‚É‚È‚é
+	            // ã‚¹ã‚¿ãƒƒã‚¯ã‚’å…¨éƒ¨è¦‹ã¦ã‚‚å·¦æ‹¬å¼§ã«åˆ°é”ã—ãªã‹ã£ãŸå ´åˆã€å·¦å³ã®æ‹¬å¼§ã®ä¸ä¸€è‡´ãŒã‚ã‚‹ã“ã¨ã«ãªã‚‹
 	            if (!pe) {
-	                System.out.printf("ƒGƒ‰[FŠ‡ŒÊ‚Ì•sˆê’v\n");
+	                System.out.printf("ã‚¨ãƒ©ãƒ¼ï¼šæ‹¬å¼§ã®ä¸ä¸€è‡´\n");
 	                return null;
 	            }
-	            // ƒXƒ^ƒbƒN‚Ìƒgƒbƒv‚É‚ ‚éƒg[ƒNƒ“‚ªŠÖ”ƒg[ƒNƒ“‚È‚çA‚»‚ê‚ğo—ÍƒLƒ…[‚Éƒ|ƒbƒv‚·‚é
+	            // ã‚¹ã‚¿ãƒƒã‚¯ã®ãƒˆãƒƒãƒ—ã«ã‚ã‚‹ãƒˆãƒ¼ã‚¯ãƒ³ãŒé–¢æ•°ãƒˆãƒ¼ã‚¯ãƒ³ãªã‚‰ã€ãã‚Œã‚’å‡ºåŠ›ã‚­ãƒ¥ãƒ¼ã«ãƒãƒƒãƒ—ã™ã‚‹
 	            if (stackLength > 0) {
 	                stackCounter = stack[stackLength - 1];
 	                if (stackCounter.type == TreeElementType.FUNCTION_CALL) {
@@ -377,17 +377,17 @@ public class ScriptLoader
 	                }
 	            }
 	        } else {
-	        	System.out.printf("•s–¾‚Èƒg[ƒNƒ“F%c\n", c);
-	            return null; // •s–¾‚Èƒg[ƒNƒ“
+	        	System.out.printf("ä¸æ˜ãªãƒˆãƒ¼ã‚¯ãƒ³ï¼š%c\n", c);
+	            return null; // ä¸æ˜ãªãƒˆãƒ¼ã‚¯ãƒ³
 	        }
 	        index++;
 	    }
-	    // “Ç‚İ‚Ş‚×‚«ƒg[ƒNƒ“‚ªs‚«‚½Û
-	    // ƒXƒ^ƒbƒNã‚É‰‰Zqƒg[ƒNƒ“‚ªc‚Á‚Ä‚¢‚½‚çA‚»‚ê‚ç‚ğo—Í‚·‚é
+	    // èª­ã¿è¾¼ã‚€ã¹ããƒˆãƒ¼ã‚¯ãƒ³ãŒå°½ããŸéš›
+	    // ã‚¹ã‚¿ãƒƒã‚¯ä¸Šã«æ¼”ç®—å­ãƒˆãƒ¼ã‚¯ãƒ³ãŒæ®‹ã£ã¦ã„ãŸã‚‰ã€ãã‚Œã‚‰ã‚’å‡ºåŠ›ã™ã‚‹
 	    while (stackLength > 0) {
 	        stackCounter = stack[--stackLength];
 	        if (((String)stackCounter.data).equals("(") || ((String)stackCounter.data).equals(")")) {
-	            System.out.printf("ƒGƒ‰[FŠ‡ŒÊ‚Ì•sˆê’v\n");
+	            System.out.printf("ã‚¨ãƒ©ãƒ¼ï¼šæ‹¬å¼§ã®ä¸ä¸€è‡´\n");
 	            return null;
 	        }
 	        output.add(stackCounter);
@@ -427,7 +427,7 @@ public class ScriptLoader
 		if(token.type == TokenType.NONE) throw new ScriptSyntaxException("Expecting argument", pos);
 		TreeElement parent;
 		if(parameter.type == ParameterType.OPERATOR){
-			token = getToken(source);	//ˆê“x–ß‚µ‚½pos‚ği‚ß‚é‚½‚ß
+			token = getToken(source);	//ä¸€åº¦æˆ»ã—ãŸposã‚’é€²ã‚ã‚‹ãŸã‚
 			if(token.type != TokenType.SIGN) throw new ScriptSyntaxException("Invalid operator", pos);
 			String str = token.body;
 			for(int i = 0;i < operator_list.length;i++){
@@ -457,7 +457,7 @@ public class ScriptLoader
 				parent.data = str;
 			}
 			else if(token.type == TokenType.ALPHABET){
-				token = getToken(source);	//ˆê“x–ß‚µ‚½pos‚ği‚ß‚é‚½‚ß
+				token = getToken(source);	//ä¸€åº¦æˆ»ã—ãŸposã‚’é€²ã‚ã‚‹ãŸã‚
 				if(token.body.equals("true")){
 					parent = new TreeElement(TreeElementType.L_BOOLEAN);
 					parent.data = true;
@@ -467,7 +467,7 @@ public class ScriptLoader
 					parent.data = false;
 				}
 				else{
-					if(!checkVarName(token.body)) {		//•Ï”–¼‚ª—\–ñŒê‚Å‚È‚¢‚©ƒ`ƒFƒbƒN
+					if(!checkVarName(token.body)) {		//å¤‰æ•°åãŒäºˆç´„èªã§ãªã„ã‹ãƒã‚§ãƒƒã‚¯
 						throw new ScriptSyntaxException("Invalid variable name \"" + token.body + "\"", pos);
 					}
 					parent = new TreeElement(TreeElementType.VARIABLE);
@@ -489,7 +489,7 @@ public class ScriptLoader
 					}*/
 			}
 			else if(token.body.equals("*")){
-				token = getToken(source);	//ˆê“x–ß‚µ‚½pos‚ği‚ß‚é‚½‚ß
+				token = getToken(source);	//ä¸€åº¦æˆ»ã—ãŸposã‚’é€²ã‚ã‚‹ãŸã‚
 				ScriptToken token2 = getToken(source);
 				if(token2.type != TokenType.ALPHABET) throw new ScriptSyntaxException("Invalid argument", pos);
 				String str = token2.body;
@@ -594,7 +594,7 @@ public class ScriptLoader
 	}
 
 	/**
-	 * •Ï”–¼‚ª—\–ñŒê‚Å‚È‚¢‚©ƒ`ƒFƒbƒN (–¢À‘•)
+	 * å¤‰æ•°åãŒäºˆç´„èªã§ãªã„ã‹ãƒã‚§ãƒƒã‚¯ (æœªå®Ÿè£…)
 	 * @param body
 	 * @return
 	 */
@@ -696,7 +696,7 @@ public class ScriptLoader
 	}
 
 	private void seekNextLine(String source) {
-		//‹ó‚Ìƒ‹[ƒv
+		//ç©ºã®ãƒ«ãƒ¼ãƒ—
 		while(!getToken(source).body.equals("\n") && pos < source.length());
 		
 		if(pos < source.length()) {
@@ -743,7 +743,7 @@ public class ScriptLoader
 				}
 				cur_type = type;
 			}
-			term = term + c;	//‚±‚ê‚ÅOK‚ç‚µ‚¢
+			term = term + c;	//ã“ã‚Œã§OKã‚‰ã—ã„
 			pos++;
 		}
 		skipSpace(source);
@@ -771,7 +771,7 @@ public class ScriptLoader
 		return TokenType.UNKNOWN;
 	}
 
-	//”¼ŠpƒXƒy[ƒXAƒ^ƒu‚ğ”ò‚Î‚·
+	//åŠè§’ã‚¹ãƒšãƒ¼ã‚¹ã€ã‚¿ãƒ–ã‚’é£›ã°ã™
 	private void skipSpace(String source) {
 		while(pos < source.length()){
 			char c = source.charAt(pos);
@@ -782,7 +782,7 @@ public class ScriptLoader
 		}
 	}
 	
-	//”¼ŠpƒXƒy[ƒXAƒ^ƒuA‰üs‚ğ”ò‚Î‚·
+	//åŠè§’ã‚¹ãƒšãƒ¼ã‚¹ã€ã‚¿ãƒ–ã€æ”¹è¡Œã‚’é£›ã°ã™
 	private void skipSpaceBreak(String source) {
 		while(pos < source.length()){
 			char c = source.charAt(pos);

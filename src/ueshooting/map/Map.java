@@ -67,7 +67,7 @@ public class Map {
 	}*/
 	
 	public void action(){
-		System.out.printf("%d\n", this.getSpriteNum());
+		//System.out.printf("%d\n", this.getSpriteNum());
 		
 		if(stageWinFlag && stage_state_time >= 100){
 			stageClearFlag = true;
@@ -85,7 +85,7 @@ public class Map {
 				size--;
 				continue;
 			}
-			if(temp instanceof Enemy) System.out.printf("NPC id %d\n of %s\n", i, ((Enemy)temp).ai.getClass().getName());
+			//if(temp instanceof Enemy) System.out.printf("NPC id %d\n of %s\n", i, ((Enemy)temp).ai.getClass().getName());
 			boolean ret = temp.move();
 			if(ret){
 				if(temp.getX_int() < -SystemMain.screen_edge_size || temp.getX_int() > SystemMain.main_screen_xsize + SystemMain.screen_edge_size ||
