@@ -1,19 +1,12 @@
-E‹N“®•û–@
- UEShooting.bat ‚ðƒ_ƒuƒ‹ƒNƒŠƒbƒN
+ãƒ»èµ·å‹•æ–¹æ³•
+ UEShooting.bat ã‚’ãƒ€ãƒ–ãƒ«ã‚¯ãƒªãƒƒã‚¯
+ 
+ ãƒ»æ“ä½œæ–¹æ³•
+ ç§»å‹•ï¼šåå­—ã‚­ãƒ¼
+ ä½Žé€Ÿç§»å‹•ï¼šå·¦Shiftã‚­ãƒ¼
+ å¼¾ã®ç™ºå°„ï¼šZã‚­ãƒ¼
 
-EƒXƒe[ƒW‚Ì“Ç‚Ýž‚Ý
- ‹N“®‚·‚é‚ÆAstageƒtƒHƒ‹ƒ_‚Ì’†‚Ìstage1.dat‚ðŽ©“®“I‚É“Ç‚Ýž‚ÞB
- ‚±‚Ìƒtƒ@ƒCƒ‹‚ðŽ©ì‚ÌƒXƒe[ƒWƒtƒ@ƒCƒ‹‚É’u‚«Š·‚¦‚ê‚Î
- Ž©ìƒXƒe[ƒW‚ðƒvƒŒƒC‚Å‚«‚éB
-
- ‚Ü‚½A“Ç‚Ýž‚Þƒtƒ@ƒCƒ‹–¼‚ÍstageƒtƒHƒ‹ƒ_‚Ì’†‚Ìstage_list.txt‚É
- ‹Lq‚³‚ê‚Ä‚¢‚éB
- 1s–Ú‚Í“Ç‚Ýž‚ÞƒXƒe[ƒW‚Ì”‚ðŽ¦‚·‚ªAŒ»Ý1ƒXƒe[ƒW‚µ‚©“Ç‚Ýž‚Ý‚Å‚«‚È‚¢‚Ì‚Å
- •K‚¸1‚É‚µ‚Ä‚¨‚­‚±‚ÆB
- 2s–Ú‚ÉstageƒtƒHƒ‹ƒ_“à‚Ì“Ç‚Ýž‚Þƒtƒ@ƒCƒ‹‚ðŽw’è‚·‚éB
- ƒfƒtƒHƒ‹ƒg‚Å‚ÍA
-
- 1s–Ú:1
- 2s–Ú:stage1.dat
-
- ‚Æ‚È‚Á‚Ä‚¢‚éB
+ãƒ»ã‚¹ãƒ†ãƒ¼ã‚¸ã®èª­ã¿è¾¼ã¿
+ èµ·å‹•ã™ã‚‹ã¨ã€stageãƒ•ã‚©ãƒ«ãƒ€ã®ä¸­ã®stage1.datã‚’è‡ªå‹•çš„ã«èª­ã¿è¾¼ã‚€ã€‚
+ ã“ã®ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ã‚¹ãƒ†ãƒ¼ã‚¸ã‚¨ãƒ‡ã‚£ã‚¿ã§ä½œã£ãŸè‡ªä½œã®ã‚¹ãƒ†ãƒ¼ã‚¸ãƒ•ã‚¡ã‚¤ãƒ«ã«ç½®ãæ›ãˆã‚Œã°
+ è‡ªä½œã‚¹ãƒ†ãƒ¼ã‚¸ã‚’ãƒ—ãƒ¬ã‚¤ã§ãã‚‹ã€‚
