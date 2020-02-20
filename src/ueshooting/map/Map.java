@@ -27,7 +27,7 @@ public class Map {
 	private static final int TILE_YNUM = 20;
 	public Stage cur_stage;
 	private ScrollDirection scroll = ScrollDirection.VERTICAL;
-	private List<Building> buildings = new ArrayList<Building>();
+	//private List<Building> buildings = new ArrayList<Building>();
 	private List<Sprite> sprites = new ArrayList<Sprite>();
 	private List<GraphicEffect> effects;
 	private int player_index = -1;
@@ -53,7 +53,10 @@ public class Map {
 	
 	public Map(Stage stage){
 		cur_stage = stage;
-		int count = 0;
+	}
+	
+	/*private void initMap() {
+	 * int count = 0;
 		for(int y = 0;y < TILE_YNUM;y++){
 			for(int x = 0;x < TILE_XNUM;x++){
 				buildings.add(new Building(x,y));
@@ -61,7 +64,7 @@ public class Map {
 				count++;
 			}
 		}
-	}
+	}*/
 	
 	public void action(){
 		System.out.printf("%d\n", this.getSpriteNum());
@@ -69,11 +72,11 @@ public class Map {
 		if(stageWinFlag && stage_state_time >= 100){
 			stageClearFlag = true;
 		}
-		int size = buildings.size();
+		/*int size = buildings.size();
 		for(int i = 0;i < size;i++){
 			buildings.get(i).action(this);
-		}
-		size = sprites.size();
+		}*/
+		int size = sprites.size();
 		for(int i = 0;i < size;i++){
 			Sprite temp = sprites.get(i);
 			if(!temp.exist){
@@ -105,7 +108,7 @@ public class Map {
 		stage_state_time++;
 	}
 	
-	public void build(BuildingCategory category,int type,int xsize,int ysize,int p_x,int p_y){
+	/*public void build(BuildingCategory category,int type,int xsize,int ysize,int p_x,int p_y){
 		//int building_index;
 		Building cur_building,temp;
 		boolean flag = true;
@@ -153,11 +156,11 @@ public class Map {
 	
 	public void setTile(int type,int x,int y){
 		tile_map[x][y] = type;
-	}
+	}*/
 	
 	public void check_collision(){
 		int sprite_num = sprites.size();
-		int building_num = buildings.size();
+		//int building_num = buildings.size();
 		int src,dest;
 		double distance;
 		for(src = 0;src < sprite_num;src++){
@@ -168,13 +171,13 @@ public class Map {
 					sprites.get(src).collision(this,sprites.get(dest));
 				}
 			}
-			if(!sprites.get(src).collision_building)continue;
+			/*if(!sprites.get(src).collision_building)continue;
 			for(dest = 0;dest < building_num;dest++){
 				distance = SystemMain.get_distance(sprites.get(src).getX_double(),sprites.get(src).getY_double(),buildings.get(dest).getX_int(),buildings.get(dest).getY_int());
 				if(distance <= sprites.get(src).collision_range + sprites.get(dest).collision_range){
 					sprites.get(src).collision(this,buildings.get(dest));
 				}
-			}
+			}*/
 		}
 	}
 	
@@ -235,7 +238,7 @@ public class Map {
 	
 	public int setSprite(Sprite sprite){
 		sprites.add(sprite);
-		return sprites.size();
+		return sprites.size()-1;
 	}
 	
 	public Sprite setSprite(SpriteCategory category,int type,int x,int y){
@@ -292,9 +295,9 @@ public class Map {
 		return (Player) sprites.get(player_index);
 	}
 	
-	public Building getBuilding(int x,int y){
+	/*public Building getBuilding(int x,int y){
 		return buildings.get(building_map[x][y]);
-	}
+	}*/
 	
 	public Sprite getSprite(int index){
 		return sprites.get(index);

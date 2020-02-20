@@ -173,9 +173,9 @@ public class Drawer {
 		if(use_sprite){
 			draw_sprites(graphics,map,0,100);
 		}
-		if(use_building){
+		/*if(use_building){
 			draw_buildings(graphics, map);
-		}
+		}*/
 		if(use_sprite){
 			draw_sprites(graphics,map,101,1000);
 		}
@@ -210,7 +210,7 @@ public class Drawer {
 	}
 
 	//no longer used
-	private void draw_buildings(Graphics2D graphics, Map map) {
+	/*private void draw_buildings(Graphics2D graphics, Map map) {
 		Building cur_building;
 		BufferedImage cur_building_image;
 		for(int y_tile = 0;y_tile < SystemMain.screen_tile_ynum;y_tile++){
@@ -266,7 +266,7 @@ public class Drawer {
 				graphics.drawImage(cur_building_image, x_tile * SystemMain.tile_size, y_tile * SystemMain.tile_size, SystemMain.tile_size, SystemMain.tile_size, null);
 			}
 		}
-	}
+	}*/
 	
 	private void process_compound_effects(){
 		effectRenderer.processCompoundEffect();

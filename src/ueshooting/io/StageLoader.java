@@ -19,6 +19,7 @@ public class StageLoader {
 	private static final int stagefileMinimalHeaderSize = 12;
 	@SuppressWarnings("unused")
 	private static final int stagefileMinimalStageSectorSize = 0;
+	private static final int SPAWN_MANUAL = 999999;
 	int pos;
 	int stagefile_stagesector_length;
 	int stage_time_length;
@@ -34,12 +35,12 @@ public class StageLoader {
 	private int starting_frame;
 	private byte debug_flags;
 	
-	public List<String> loadStageFile(List<String> string) throws IOException{
+	public List<String> extractStageNames(int length, List<String> string) throws IOException{
 		List<String> ret = new ArrayList<>();
-		int stage_num = Integer.parseInt(string.get(0));
+		int stage_num = length;
 		if(string.size() < stage_num - 1)stage_num = string.size();
 		for(int i = 0;i < stage_num;i++){
-			ret.add(string.get(i+1));
+			ret.add(string.get(i));
 		}
 		return ret;
 	}
@@ -87,20 +88,23 @@ public class StageLoader {
 		System.arraycopy(buf, pos, temp, 0, len);
 		pos += len;
 		stage_bgimage_path = new String(temp,"SJIS");
-		len = SystemMain.bytesToInt(buf,pos);
-		pos += 4;
-		temp = new byte[len];
-		System.arraycopy(buf, pos, temp, 0, len);
-		pos += len;
+		//len = SystemMain.bytesToInt(buf,pos);
+		//pos += 4;
+		//temp = new byte[len];
+		//System.arraycopy(buf, pos, temp, 0, len);
+		//pos += len;
 		stage_first_bgm = SystemMain.bytesToInt(buf,pos);
+		pos += 4;
 		int bgm_num = SystemMain.bytesToInt(buf,pos);
+		pos += 4;
+		String path;
 		for(int i = 0;i < bgm_num;i++){
 			len = SystemMain.bytesToInt(buf,pos);
 			pos += 4;
 			temp = new byte[len];
 			System.arraycopy(buf, pos, temp, 0, len);
 			pos += len;
-			String path = new String(temp,"SJIS");
+			path = new String(temp,"SJIS");
 			stage_bgm_path_list.add(path);
 		}
 		starting_frame = SystemMain.bytesToInt(buf,pos);
@@ -151,6 +155,9 @@ public class StageLoader {
 		pos += 4;
 		spawn_time = SystemMain.bytesToInt(buf,pos);
 		pos += 4;
+		if(spawn_time == SPAWN_MANUAL) {
+			spawn_time = -1;
+		}
 		category = buf[pos];
 		pos += 1;
 		type = SystemMain.bytesToInt(buf,pos);

@@ -26,6 +26,7 @@ public class Player extends Mob {
 	private int invincible_time = 0;
 	private int invincible_end = 90;
 	public boolean debug_invincible = false;
+	
 	public Player(int p1, int p2, boolean debug_invincible) {
 		super(0, p1, p2);
 		if(scroll == ScrollDirection.HORIZONTAL)

@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import ueshooting.map.Building;
 import ueshooting.map.GameObject;
 import ueshooting.map.Map;
 
@@ -31,7 +30,7 @@ public abstract class Sprite implements GameObject {
 	protected boolean action_flag = false;
 	protected boolean move_flag = false;
 	protected boolean collision_flag = false;
-	public boolean collision_building = false;
+	//public boolean collision_building = false;
 	public boolean flash = false;
 	
 	public static void init(){
@@ -48,7 +47,7 @@ public abstract class Sprite implements GameObject {
 	
 	public abstract void collision(Map map,Sprite sprite);
 	
-	public void collision(Map map,Building building) {}
+	//public void collision(Map map,Building building) {}
 	
 	public abstract void action(Map map);
 	

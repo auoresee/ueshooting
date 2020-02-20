@@ -39,18 +39,16 @@
 						H 体力(HP) double
 						P 円周率(Math.PI) double
 						T ステージ開始からの時間 int
-						N 代入先の変数として指定されたとき、どこにも代入しない(null)。 型なし
+						N 代入先の変数として指定されたとき、どこにも代入しない(nul)。 型なし
+						
 			コマンド 2-8文字
-				注:	コマンド名はスクリプトで定義された変数との重複を防ぐため、同種のコマンドと長さをそろえるために
-						短縮することがある。
-					mov / let / letv はletに統合された。
-
 				基本
 				注	00	move 代入 var(any) = any
 					01	print 変数表示 var
 					02	push スタックにデータを積む any
 					03	pop スタックからデータを取り出す var
 					04	stype スタック先頭データのタイプ参照(int=0,bool=1,double=2,string=3) var(int)
+					05	dim 変数を定義 型名 変数名
 					
 				制御構文
 				予約	20	// got p1に進む label
@@ -67,7 +65,7 @@
 					2A	break ループから抜ける
 					2B	continue ループの初めに戻る
 					
-				算術 (結果はvarに代入(intにキャスト
+				算術 (結果はvarに代入)
 					40	let 代入/演算
 				注	41	letv 代入&演算 var(double/int) (+,-,*,/,%)= double/int
 						letv var(bool) =! bool
@@ -77,8 +75,8 @@
 					45	sqrt 平方根 var(d/i),d/i (負の数はエラー)
 					46	exp 累乗 var(d/i),d/i,d/i
 							xが負の数でyが整数でない場合や、xが0でyが0未満ならエラー
-					47	torect (結果はp,qに代入) (r,θ(度)) -> (x,y) d/i,d/i
-					48	topolar (結果はp,qに代入) (x,y) -> (r,θ(度)) d/i,d/i
+					47	torect (r,θ(度)) -> (x,y) var,var,d/i,d/i
+					48	topolar (x,y) -> (r,θ(度)) var,var,d/i,d/i
 					49	distance 距離(sqrt(x^2+y^2)) var(d/i),d/i,d/i
 					4A	sin 三角関数(度) var(d/i),d/i
 					4B	cos 三角関数(度) var(d/i),d/i
@@ -103,6 +101,7 @@
 						77	appear 自機を見えるようにする
 						78	skip p1フレームの間、毎フレーム行うイベント(updateなど)を飛ばす int
 						79	effect エフェクト(p1=タイプ,p2=X座標,p3=Y座標,p4=パラメータ) int,d/i,d/i,d/i
+						7A	activate 敵を有効化(p1=敵id) int
 						80	event イベント(p1=id,p2-p4=パラメータ) int,d/i,d/i,d/i
 						81	sound 音声の再生(p1=カテゴリ,p2=id,p3=音量) string,int,d/i
 						82	bgm BGMの変更(p1=ファイル名) string
@@ -126,20 +125,22 @@
 						BB	ctrla 弾の制御(p1=ID,p2=タイプ,p3-p5=パラメータ) int,int,d/i,d/i,d/i
 						
 					(結果は適当な変数に代入)
-						7A	dlg このターン以降、処理をプログラム(java)にまかせる(p1=呼び出し番号) int
+						7A	dlg このターン以降、処理をプログラム(java)にまかせる(p1=呼び出し番号, p2=パラメータ) int,int
 						7B	run プログラム(java)の関数を呼び出す(p1=メソッド名) string
 						7C	prm 追加パラメータ(スタック)にデータを積む any
-					(結果はp,qに代入)
-						90	pcoord プレイヤーの座標取得
-						91	pspeed プレイヤーの速度取得(vx,vy)
-						92	pspeedp プレイヤーの速度取得(r,θ(度))
+					(結果はvarに代入)
+						90	pcoord プレイヤーの座標取得 var,var
+						91	pspeed プレイヤーの速度取得(vx,vy) var,var
+						92	pspeedp プレイヤーの速度取得(r,θ(度)) var,var
 						
 					(デフォルト変数の代用)(戻り値なし)
 						A0	pos 座標変更(X=p1,Y=p2) d/i,d/i
 						A1	speed 速度変更(I=p1,J=p2) d/i,d/i
 						A2	speedp 速度変更(V=p1,A=p2) d/i,d/i
+						A3	moveto 座標(p1,p2)にp3フレームかけて移動 d/i,d/i,d/i
 						
 予定：
+	引数で式を使えるようにする
 	インクリメント/デクリメント演算子(++/--)
 	特殊変数の名称変更(複数文字)
 	letの省略、if文での多項式導入
@@ -147,5 +148,3 @@
 	C形式のfor構文[例: for(i=0;i<20;i++){	}
 	Shot型変数(構造体)
 	関数(戻り値は代入限定)
-	変数の定義
-	スコープ

@@ -18,9 +18,11 @@ public enum TreeElementType {
 	L_STRING,
 	L_BOOLEAN,
 	L_LABEL	,
-	L_ARRAY, //配列初期化などで使用する予定
+	//式
+	EXPRESSION,
 	//変数
-	VARIABLE,
+	VARIABLE,	//data: 変数名(string)
+	SPECIAL_VARIABLE,
 	//関数呼び出し
 	FUNCTION_CALL,
 	//演算子

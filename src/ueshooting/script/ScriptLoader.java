@@ -14,7 +14,13 @@ public class ScriptLoader
 	private final char sign_list[] = {'+','-','*','/','^','\\','%','=','{','}','>','<','\"','&','|',',','(',')'};
 	private final String operator_list[] = {"+","-","*","/","^","%","+=","-=","*=","/=","%=","==","=","!=","=!",">","<",">=","<=","&&","||","(",")"};
 	
-	//ルート(階層0)
+	/**
+	 * スクリプトを解析し構文木を生成する
+	 * ルート(階層0)
+	 * @param source スクリプトのソース
+	 * @return Script 構文木
+	 * @throws ScriptSyntaxException
+	 */
 	public Script generateTree(String source) throws ScriptSyntaxException
 	{
 		Script root = new Script(TreeElementType.ROOT);
@@ -111,49 +117,75 @@ public class ScriptLoader
 		}
 		else {
 			ParameterFormat format = ParameterFormat.getParameterFormat(command);
-			for(int i = 0;i < format.format_specifiers.length;i++){
-				if(pos >= source.length()) throw new ScriptSyntaxException("Expecting argument", pos);
-				parent.addChild(getParameter(source, format.format_specifiers[i]));
-				System.out.println(pos);
-			}
+			parent.addChilds(getParameters(source, format));
 		}
 		seekNextLine(source);
 		return parent;
+	}
+	
+	private List<TreeElement> getParameters(String source, ParameterFormat format) throws ScriptSyntaxException {
+		List<TreeElement> ret = new ArrayList<>();
+		for(int i = 0;i < format.format_specifiers.length;i++){
+			if(pos >= source.length()) throw new ScriptSyntaxException("Expecting argument", pos);
+			List<TreeElement> ltmp = getExpression(source, ParameterType.ANY);
+			if(ltmp.size() == 0) {
+				throw new ScriptSyntaxException("Parameters cannot be omitted", pos);
+			}
+			else if(ltmp.size() == 1) {
+				ret.add(ltmp.get(0));
+			}
+			else {
+				TreeElement tmp = new TreeElement(TreeElementType.EXPRESSION);
+				ltmp = toPostfixNotation(ltmp);	//逆ポーランド順に変換
+				tmp.addChilds(ltmp);
+				ret.add(tmp);
+			}
+			System.out.println(pos);
+		}
+		return ret;
 	}
 
 	private List<TreeElement> getAssignmentExpression(String source) throws ScriptSyntaxException {
 		List<TreeElement> ret = new ArrayList<>();
 		
+		//左辺の変数を取得
 		ParameterFormatSpecifier format = new ParameterFormatSpecifier(ParameterType.VAR_ANY);
 		TreeElement child = getParameter(source, format);
-		ParameterType varType = getVariableParameterType((ScriptVariable) child.data);
-		if(varType == ParameterType.VAR_ANY) varType = ParameterType.ANY;
+		//ParameterType varType = getVariableParameterType((ScriptSpecialVariable) child.data);
+		ret.add(child);
+		
+		//varTypeを変数型→値型に変換 (後の処理のため)　
+		/*if(varType == ParameterType.VAR_ANY) varType = ParameterType.ANY;
 		if(varType == ParameterType.VAR_INT || varType == ParameterType.VAR_DOUBLE) varType = ParameterType.DOUBLE_OR_INT;
 		if(varType == ParameterType.VAR_STRING) varType = ParameterType.STRING;
-		if(varType == ParameterType.VAR_BOOLEAN) varType = ParameterType.BOOLEAN;
-		ret.add(child);
+		if(varType == ParameterType.VAR_BOOLEAN) varType = ParameterType.BOOLEAN;*/
+		
+		//代入演算子を取得
 		format = new ParameterFormatSpecifier("=","+=","-=","*=","/=","%=","=!");
 		child = getParameter(source, format);
-		if(!isOperatorCompatible((String) child.data, varType)){
-			throw new ScriptSyntaxException(String.format("Incompatible operator %s with type %s", (String) child.data, varType.toString()), pos);
-		}
+		//if(!isOperatorCompatible((String) child.data, varType)){	//使えない演算子の組み合わせ(文字列型に-=など)ならエラー
+		//	throw new ScriptSyntaxException(String.format("Incompatible operator %s with type %s", (String) child.data, varType.toString()), pos);
+		//}
 		ret.add(child);
-		List<TreeElement> elements = getExpression(source, varType);
+		
+		//右辺を取得
+		List<TreeElement> elements = getExpression(source, ParameterType.ANY);
 		elements = toPostfixNotation(elements);
-		child = new TreeElement(TreeElementType.L_ARRAY);
+		child = new TreeElement(TreeElementType.EXPRESSION);
 		child.list = elements;
 		ret.add(child);
 		return ret;
 	}
 
 	/**
-	 * 逆ポーランド記法に変換
+	 * 式を処理しトークンのリストを取得
+	 * (逆ポーランド順にはしない)
+	 * @param source
+	 * @param pType
+	 * @return
+	 * @throws ScriptSyntaxException
 	 */
-	private List<TreeElement> toPostfixNotation(List<TreeElement> elements) {
-		return shunting_yard(elements);
-	}
-
-	private List<TreeElement> getExpression(String source, ParameterType varType) throws ScriptSyntaxException {
+	private List<TreeElement> getExpression(String source, ParameterType pType) throws ScriptSyntaxException {
 		List<TreeElement> ret = new ArrayList<>();
 		
 		prev_pos = pos;
@@ -169,17 +201,7 @@ public class ScriptLoader
 		
 		ParameterFormatSpecifier format = new ParameterFormatSpecifier(ParameterType.ANY);
 		TreeElement child = getParameter(source, format);
-		if(child.type == TreeElementType.VARIABLE){
-			ParameterType type = getVariableParameterType((ScriptVariable) child.data);
-			if(!isOperandTypesCompatible(type, varType)){
-				throw new ScriptSyntaxException(String.format("Incompatible operand types %s and %s", varType.toString(), getVariableParameterType((ScriptVariable) child.data).toString()), pos);
-			}
-		}
-		else{
-			if(!isOperandTypesCompatible(child.type, varType)){
-				throw new ScriptSyntaxException(String.format("Incompatible operand types %s and %s", varType.toString(), getVariableParameterType((ScriptVariable) child.data).toString()), pos);
-			}
-		}
+		
 		ret.add(child);
 		while(true){
 			format = new ParameterFormatSpecifier("+","-","*","/","%","^");
@@ -194,12 +216,12 @@ public class ScriptLoader
 			else {
 				pos = prev_pos;
 			}
-			if(t.type == TokenType.BREAK || t.type == TokenType.EOF){
+			if(t.type == TokenType.BREAK || t.type == TokenType.EOF || t.body.equals(",")){
 				break;
 			}
 			child = getParameter(source, format);
-			if(!isOperatorCompatible((String) child.data, varType)){
-				throw new ScriptSyntaxException(String.format("Incompatible operator %s with type %s", (String) child.data, varType.toString()), pos);
+			if(!isOperatorCompatible((String) child.data, pType)){
+				throw new ScriptSyntaxException(String.format("Incompatible operator %s with type %s", (String) child.data, pType.toString()), pos);
 			}
 			ret.add(child);
 			prev_pos = pos;
@@ -213,17 +235,7 @@ public class ScriptLoader
 			}
 			format = new ParameterFormatSpecifier(ParameterType.ANY);
 			child = getParameter(source, format);
-			if(child.type == TreeElementType.VARIABLE){
-				ParameterType type = getVariableParameterType((ScriptVariable) child.data);
-				if(!isOperandTypesCompatible(type, varType)){
-					throw new ScriptSyntaxException(String.format("Incompatible operand types %s and %s", varType.toString(), getVariableParameterType((ScriptVariable) child.data).toString()), pos);
-				}
-			}
-			else{
-				if(!isOperandTypesCompatible(child.type, varType)){
-					throw new ScriptSyntaxException(String.format("Incompatible operand types %s and %s", varType.toString(), getVariableParameterType((ScriptVariable) child.data).toString()), pos);
-				}
-			}
+
 			ret.add(child);
 		}
 		return ret;
@@ -262,20 +274,14 @@ public class ScriptLoader
 	    }
 	    return false;
 	}
-	 
-	private int op_arg_count(TreeElement c)
-	{
-	    switch (c.data.toString()) {
-	        case "*": case "/": case "%": case "+": case "-": case "=":
-	            return 2;
-	        case "!":
-	            return 1;
-	        default: // 関数の場合、A()の引数は0個、B()の引数は1個、C()の引数は2個... と定義
-	            return 0;
-	    }
-	}
 	
-	private List<TreeElement> shunting_yard(List<TreeElement> input)
+	/**
+	 * 式を逆ポーランド記法に変換
+	 * 
+	 * @param input
+	 * @return
+	 */
+	private List<TreeElement> toPostfixNotation(List<TreeElement> input)
 	{
 		List<TreeElement> output = new ArrayList<>();
 	    int index = 0;
@@ -461,25 +467,26 @@ public class ScriptLoader
 					parent.data = false;
 				}
 				else{
-					ScriptVariable var = ScriptVariable.getVariable(token.body);
-					if(var == null) {
-						throw new ScriptSyntaxException("Undefined variable name", pos);
+					if(!checkVarName(token.body)) {		//変数名が予約語でないかチェック
+						throw new ScriptSyntaxException("Invalid variable name \"" + token.body + "\"", pos);
 					}
+					parent = new TreeElement(TreeElementType.VARIABLE);
+					parent.data = token.body;
+				}
 					//if(getVariableParameterType(var) != parameter.type) {
 					//	throw new ScriptSyntaxException("incompatible type for the argument", pos);
 					//}
-					if(token.body.equals("D") || token.body.equals("E") || token.body.equals("F") || token.body.equals("G")){
-						parent = new TreeElement(TreeElementType.VARIABLE);
+					/*if(token.body.equals("D") || token.body.equals("E") || token.body.equals("F") || token.body.equals("G")){
+						parent = new TreeElement(TreeElementType.SPECIAL_VARIABLE);
 						if(!getToken(source).body.equals("["))throw new ScriptSyntaxException("Invalid argument", pos);
 						var.index = (int) getLiteralRealNumber(source);
 						if(!getToken(source).body.equals("]"))throw new ScriptSyntaxException("Invalid argument", pos);
 						parent.data = var;
 					}
 					else{
-						parent = new TreeElement(TreeElementType.VARIABLE);
+						parent = new TreeElement(TreeElementType.SPECIAL_VARIABLE);
 						parent.data = var;
-					}
-				}
+					}*/
 			}
 			else if(token.body.equals("*")){
 				token = getToken(source);	//一度戻したposを進めるため
@@ -501,10 +508,7 @@ public class ScriptLoader
 					return parent;
 				}
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_INT) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case DOUBLE_OR_INT:
@@ -513,11 +517,7 @@ public class ScriptLoader
 					return parent;
 				}
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_DOUBLE ||
-							getVariableParameterType(var) == ParameterType.VAR_INT) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case DOUBLE_INT_BOOLEAN:
@@ -527,12 +527,7 @@ public class ScriptLoader
 					return parent;
 				}
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_DOUBLE ||
-							getVariableParameterType(var) == ParameterType.VAR_INT ||
-							getVariableParameterType(var) == ParameterType.VAR_BOOLEAN) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case STRING:
@@ -540,10 +535,7 @@ public class ScriptLoader
 					return parent;
 				}
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_STRING) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case BOOLEAN:
@@ -551,10 +543,7 @@ public class ScriptLoader
 					return parent;
 				}
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_BOOLEAN) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case PROCEDURE:
@@ -569,59 +558,32 @@ public class ScriptLoader
 				break;
 			case VAR_INT:
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_INT ||
-							getVariableParameterType(var) == ParameterType.VAR_ANY) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case VAR_DOUBLE:
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_DOUBLE ||
-							getVariableParameterType(var) == ParameterType.VAR_ANY) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case VAR_DOUBLE_OR_INT:
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_DOUBLE ||
-							getVariableParameterType(var) == ParameterType.VAR_INT ||
-							getVariableParameterType(var) == ParameterType.VAR_ANY) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case VAR_DOUBLE_INT_BOOLEAN:
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_DOUBLE ||
-							getVariableParameterType(var) == ParameterType.VAR_INT ||
-							getVariableParameterType(var) == ParameterType.VAR_BOOLEAN ||
-							getVariableParameterType(var) == ParameterType.VAR_ANY) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case VAR_STRING:
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_STRING ||
-							getVariableParameterType(var) == ParameterType.VAR_ANY) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case VAR_BOOLEAN:
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_BOOLEAN ||
-							getVariableParameterType(var) == ParameterType.VAR_ANY) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			default:
@@ -631,62 +593,14 @@ public class ScriptLoader
 		throw new ScriptSyntaxException("Invalid argument", pos);
 	}
 
-	private ParameterType getVariableParameterType(ScriptVariable var) {
-		switch(var){
-		case VAR_a:
-		case VAR_b:
-		case VAR_c:
-		case VAR_d:
-		case VAR_e:
-		case VAR_f:
-		case VAR_g:
-		case VAR_h:
-		case VAR_i:
-		case VAR_j:
-		case VAR_k:
-		case VAR_l:
-		case VAR_T:
-		case VAR_D:
-		case VAR_E:
-			return ParameterType.VAR_INT;
-			
-		case VAR_m:
-		case VAR_n:
-		case VAR_o:
-			return ParameterType.VAR_BOOLEAN;
-			
-		case VAR_p:
-		case VAR_q:
-		case VAR_r:
-		case VAR_s:
-		case VAR_t:
-		case VAR_u:
-		case VAR_v:
-		case VAR_w:
-		case VAR_x:
-		case VAR_y:
-		case VAR_z:
-		case VAR_A:
-		case VAR_H:
-		case VAR_I:
-		case VAR_J:
-		case VAR_P:
-		case VAR_V:
-		case VAR_X:
-		case VAR_Y:
-		case VAR_R:
-		case VAR_F:
-		case VAR_G:
-			return ParameterType.VAR_DOUBLE;
-			
-		case VAR_B:
-		case VAR_C:
-			return ParameterType.VAR_STRING;
-			
-		case VAR_N:
-			return ParameterType.VAR_ANY;
-		}
-		return null;
+	/**
+	 * 変数名が予約語でないかチェック (未実装)
+	 * @param body
+	 * @return
+	 */
+	private boolean checkVarName(String body) {
+		// TODO Auto-generated method stub
+		return true;
 	}
 
 	private String getLiteralString(String source) throws ScriptSyntaxException {
@@ -730,152 +644,8 @@ public class ScriptLoader
 		}
 	}
 
-	private ScriptCommand getCommand(String body) {
-		switch(body){
-		case "move":
-			return ScriptCommand.MOVE;
-		case "print":
-			return ScriptCommand.PRINT;
-		case "push":
-			return ScriptCommand.PUSH;
-		case "pop":
-			return ScriptCommand.POP;
-		case "stype":
-			return ScriptCommand.STYPE;
-			
-		case "call":
-			return ScriptCommand.CALL;
-		case "jump":
-			return ScriptCommand.JUMP;
-		case "if":
-			return ScriptCommand.IF;
-		case "bif":
-			return ScriptCommand.BIF;
-		case "else":
-			return ScriptCommand.ELSE;
-		case "elseif":
-			return ScriptCommand.ELSEIF;
-		case "ifend":
-			return ScriptCommand.IFEND;
-		case "while":
-			return ScriptCommand.WHILE;
-		case "for":
-			return ScriptCommand.FOR;
-		case "lend":
-			return ScriptCommand.LEND;
-		case "break":
-			return ScriptCommand.BREAK;
-		case "continue":
-			return ScriptCommand.CONTINUE;
-			
-		case "let":
-			return ScriptCommand.LET;
-		case "letv":
-			return ScriptCommand.LETV;
-		case "cmp":
-			return ScriptCommand.CMP;
-		case "sqrt":
-			return ScriptCommand.SQRT;
-		case "exp":
-			return ScriptCommand.EXP;
-		case "torect":
-			return ScriptCommand.TORECT;
-		case "topolar":
-			return ScriptCommand.TOPOLAR;
-		case "dis":
-			return ScriptCommand.DISTANCE;
-		case "sin":
-			return ScriptCommand.SIN;
-		case "cos":
-			return ScriptCommand.COS;
-		case "tan":
-			return ScriptCommand.TAN;
-		case "atan":
-			return ScriptCommand.ATAN;
-		case "atan2":
-			return ScriptCommand.ATAN2;
-		case "log":
-			return ScriptCommand.LOG;
-		case "random":
-			return ScriptCommand.RANDOM;
-		case "random2":
-			return ScriptCommand.RANDOM2;
-			
-		case "debug":
-			return ScriptCommand.DEBUG;
-		case "return":
-			return ScriptCommand.RETURN;
-		case "end":
-			return ScriptCommand.END;
-		case "die":
-			return ScriptCommand.DIE;
-		case "del":
-			return ScriptCommand.DEL;
-		case "kill":
-			return ScriptCommand.KIL;
-		case "hide":
-			return ScriptCommand.HIDE;
-		case "appear":
-			return ScriptCommand.APPEAR;
-		case "skip":
-			return ScriptCommand.SKIP;
-		case "effect":
-			return ScriptCommand.EFFECT;
-		case "event":
-			return ScriptCommand.EVENT;
-		case "sound":
-			return ScriptCommand.SOUND;
-		case "bgm":
-			return ScriptCommand.SOUND;
-		case "collide":
-			return ScriptCommand.COLLIDE;
-		case "stgclear":
-			return ScriptCommand.STGCLEAR;
-		case "shoot":
-			return ScriptCommand.SHOOT;
-		case "setshot":
-			return ScriptCommand.SETSHOT;
-		case "getid":
-			return ScriptCommand.GETID;
-		case "sspeed":
-			return ScriptCommand.SSPEED;
-		case "sspeedp":
-			return ScriptCommand.SSPEEDP;
-		case "sangle":
-			return ScriptCommand.SANGLE;
-		case "srotate":
-			return ScriptCommand.SROTATE;
-		case "vspeed":
-			return ScriptCommand.VSPEED;
-		case "vspeedp":
-			return ScriptCommand.VSPEEDP;
-		case "vrotate":
-			return ScriptCommand.VROTATE;
-		case "ctrlm":
-			return ScriptCommand.CTRLM;
-		case "ctrla":
-			return ScriptCommand.CTRLA;
-		case "dlg":
-			return ScriptCommand.DLG;
-		case "run":
-			return ScriptCommand.RUN;
-		case "prm":
-			return ScriptCommand.PRM;
-		case "pcoord":
-			return ScriptCommand.PCOORD;
-		case "pspeed":
-			return ScriptCommand.PSPEED;
-		case "pspeedp":
-			return ScriptCommand.PSPEEDP;
-		case "pos":
-			return ScriptCommand.POS;
-		case "speed":
-			return ScriptCommand.SPEED;
-		case "speedp":
-			return ScriptCommand.SPEEDP;
-		}
-
-		return null;
+	private ScriptCommand getCommand(String name) {
+		return ScriptCommand.getCommand(name);
 	}
 
 	private TreeElementType getTermType(ScriptTerm term) {

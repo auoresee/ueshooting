@@ -16,6 +16,9 @@ public class ParameterFormat {
 			return new ParameterFormat(new ParameterFormatSpecifier(ParameterType.VAR_ANY),
 					new ParameterFormatSpecifier("="), new ParameterFormatSpecifier(ParameterType.ANY));
 			
+		case DIM:
+			return new ParameterFormat(new ParameterFormatSpecifier(ParameterType.VAR_ANY), new ParameterFormatSpecifier(ParameterType.VAR_ANY));
+			
 		case PRINT:
 		case POP:
 			return new ParameterFormat(new ParameterFormatSpecifier(ParameterType.VAR_ANY));
@@ -134,12 +137,21 @@ public class ParameterFormat {
 					new ParameterFormatSpecifier(ParameterType.INT),
 					new ParameterFormatSpecifier(ParameterType.DOUBLE_OR_INT),
 					new ParameterFormatSpecifier(ParameterType.DOUBLE_OR_INT));
+			
+		case MOVETO:
+			return new ParameterFormat(
+					new ParameterFormatSpecifier(ParameterType.DOUBLE_OR_INT),
+					new ParameterFormatSpecifier(ParameterType.DOUBLE_OR_INT),
+					new ParameterFormatSpecifier(ParameterType.DOUBLE_OR_INT));
 		
 		case DEL:
 		case KIL:
 		case SKIP:
-		case DLG:
+		case ACTIVATE:
 			return new ParameterFormat(new ParameterFormatSpecifier(ParameterType.INT));
+			
+		case DLG:
+			return new ParameterFormat(new ParameterFormatSpecifier(ParameterType.INT), new ParameterFormatSpecifier(ParameterType.INT));
 			
 		case EFFECT:
 		case EVENT:

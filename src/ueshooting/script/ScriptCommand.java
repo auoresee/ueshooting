@@ -6,6 +6,7 @@ public enum ScriptCommand {
 	PUSH	,
 	POP		,
 	STYPE	,
+	DIM		,
 	CALL	,
 	JUMP	,
 	IF		,
@@ -44,6 +45,7 @@ public enum ScriptCommand {
 	APPEAR	,
 	SKIP	,
 	EFFECT	,
+	ACTIVATE,
 	EVENT	,
 	SOUND	,
 	BGM		,
@@ -70,6 +72,161 @@ public enum ScriptCommand {
 	POS 	,
 	SPEED	,
 	SPEEDP	,
+	MOVETO	,
 	
-	UNDEFINED,
+	UNDEFINED;
+	
+	public static ScriptCommand getCommand(String name) {
+		switch(name){
+		case "move":
+			return ScriptCommand.MOVE;
+		case "print":
+			return ScriptCommand.PRINT;
+		case "push":
+			return ScriptCommand.PUSH;
+		case "pop":
+			return ScriptCommand.POP;
+		case "stype":
+			return ScriptCommand.STYPE;
+		case "dim":
+			return ScriptCommand.DIM;
+			
+		case "call":
+			return ScriptCommand.CALL;
+		case "jump":
+			return ScriptCommand.JUMP;
+		case "if":
+			return ScriptCommand.IF;
+		case "bif":
+			return ScriptCommand.BIF;
+		case "else":
+			return ScriptCommand.ELSE;
+		case "elseif":
+			return ScriptCommand.ELSEIF;
+		case "ifend":
+			return ScriptCommand.IFEND;
+		case "while":
+			return ScriptCommand.WHILE;
+		case "for":
+			return ScriptCommand.FOR;
+		case "lend":
+			return ScriptCommand.LEND;
+		case "break":
+			return ScriptCommand.BREAK;
+		case "continue":
+			return ScriptCommand.CONTINUE;
+			
+		case "let":
+			return ScriptCommand.LET;
+		case "letv":
+			return ScriptCommand.LETV;
+		case "cmp":
+			return ScriptCommand.CMP;
+		case "sqrt":
+			return ScriptCommand.SQRT;
+		case "exp":
+			return ScriptCommand.EXP;
+		case "torect":
+			return ScriptCommand.TORECT;
+		case "topolar":
+			return ScriptCommand.TOPOLAR;
+		case "dis":
+			return ScriptCommand.DISTANCE;
+		case "sin":
+			return ScriptCommand.SIN;
+		case "cos":
+			return ScriptCommand.COS;
+		case "tan":
+			return ScriptCommand.TAN;
+		case "atan":
+			return ScriptCommand.ATAN;
+		case "atan2":
+			return ScriptCommand.ATAN2;
+		case "log":
+			return ScriptCommand.LOG;
+		case "random":
+			return ScriptCommand.RANDOM;
+		case "random2":
+			return ScriptCommand.RANDOM2;
+			
+		case "debug":
+			return ScriptCommand.DEBUG;
+		case "return":
+			return ScriptCommand.RETURN;
+		case "end":
+			return ScriptCommand.END;
+		case "die":
+			return ScriptCommand.DIE;
+		case "del":
+			return ScriptCommand.DEL;
+		case "kill":
+			return ScriptCommand.KIL;
+		case "hide":
+			return ScriptCommand.HIDE;
+		case "appear":
+			return ScriptCommand.APPEAR;
+		case "skip":
+			return ScriptCommand.SKIP;
+		case "effect":
+			return ScriptCommand.EFFECT;
+		case "activate":
+			return ScriptCommand.ACTIVATE;
+		case "event":
+			return ScriptCommand.EVENT;
+		case "sound":
+			return ScriptCommand.SOUND;
+		case "bgm":
+			return ScriptCommand.SOUND;
+		case "collide":
+			return ScriptCommand.COLLIDE;
+		case "stgclear":
+			return ScriptCommand.STGCLEAR;
+		case "shoot":
+			return ScriptCommand.SHOOT;
+		case "setshot":
+			return ScriptCommand.SETSHOT;
+		case "getid":
+			return ScriptCommand.GETID;
+		case "sspeed":
+			return ScriptCommand.SSPEED;
+		case "sspeedp":
+			return ScriptCommand.SSPEEDP;
+		case "sangle":
+			return ScriptCommand.SANGLE;
+		case "srotate":
+			return ScriptCommand.SROTATE;
+		case "vspeed":
+			return ScriptCommand.VSPEED;
+		case "vspeedp":
+			return ScriptCommand.VSPEEDP;
+		case "vrotate":
+			return ScriptCommand.VROTATE;
+		case "ctrlm":
+			return ScriptCommand.CTRLM;
+		case "ctrla":
+			return ScriptCommand.CTRLA;
+		case "dlg":
+			return ScriptCommand.DLG;
+		case "run":
+			return ScriptCommand.RUN;
+		case "prm":
+			return ScriptCommand.PRM;
+		case "pcoord":
+			return ScriptCommand.PCOORD;
+		case "pspeed":
+			return ScriptCommand.PSPEED;
+		case "pspeedp":
+			return ScriptCommand.PSPEEDP;
+		case "pos":
+			return ScriptCommand.POS;
+		case "speed":
+			return ScriptCommand.SPEED;
+		case "speedp":
+			return ScriptCommand.SPEEDP;
+		case "moveto":
+			return ScriptCommand.MOVETO;
+		}
+
+		return null;
+	}
 }

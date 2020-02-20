@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.imageio.IIOException;
@@ -51,26 +52,26 @@ public class GameMain extends JFrame implements ActionListener,KeyListener,Playe
 
 	//private static final String starting_map = "map\\map.txt";
 	private static final String stage_dir = "stage\\";
-	static GameMain frame;
+	public static GameMain frame;
 	Drawer drawer = Drawer.instance;
 	SoundManager soundManager = new SoundManager();
 	public Map map;
 	StageData stage_data;
-	EnemyGenerator generator = new EnemyGenerator(1,3);
+	public EnemyGenerator generator = new EnemyGenerator(1,3);
 	GameScreen screen;
 	Timer timer;
 	Player player;
 	Point point = new Point();
 	private boolean[] key_states = new boolean[7];
+	private static final String TITLE = "UEShooting";
 	
 	public static void main(String[] args) {
-		frame = new GameMain("タイトル");
+		frame = new GameMain(args);	//a本当はこの呼び出し方はよくないらしい
 	}
 	
 	void load_sprite_chips(SpriteCategory category) throws IOException{
 		String filename;
 		Image image;
-		BufferedImage bimage;
 		for(int i = 0;;i++){
 			filename = Sprite.getChipPath(category,i);
 			if(!new File(filename).exists()){
@@ -93,7 +94,7 @@ public class GameMain extends JFrame implements ActionListener,KeyListener,Playe
 		}
 	}
 	
-	//クリップは名前順で登録されるので、番号が名前順に一致するようにする(例: shot_01.wav, shot_02.wav)
+	//aクリップは名前順で登録されるので、番号が名前順に一致するようにする(例: shot_01.wav, shot_02.wav)
 	private void load_sound_clips() {
 		String path = "sound";
 	    File dir = new File(path);
@@ -137,11 +138,10 @@ public class GameMain extends JFrame implements ActionListener,KeyListener,Playe
 		
 		BufferedImage image;
 		Sprite.init();
-		StageLoader loader = null;
-		List<String> string = null;
+		StageLoader loader = new StageLoader();
+		List<String> strings = null;
 		try {
-			loader = new StageLoader();
-			string = FileLoader.loadStrings(stage_dir + "stage_list.txt");
+			strings = FileLoader.loadStrings(stage_dir + "stage_list.txt");
 		} catch (IOException e){
 			if((e instanceof FileNotFoundException) | (e instanceof NoSuchFileException)) {
 				System.out.println("stage\\stage_list.txtが見つかりませんでした。");
@@ -150,9 +150,16 @@ public class GameMain extends JFrame implements ActionListener,KeyListener,Playe
 			e.printStackTrace();
 			return false;
 		}
+		int num = Integer.parseInt(strings.remove(0));
+		return load_stages(num,strings);
+	}
+	
+	private boolean load_stages(int length, List<String> args) {
+		Sprite.init();
+		StageLoader loader = new StageLoader();
 		
 		try {
-			List<String> stage_names = loader.loadStageFile(string);
+			List<String> stage_names = loader.extractStageNames(length, args);
 			stage_data = new StageData(stage_names.size());
 			for(int i = 0;i < stage_data.getStageNum();i++){
 				stage_data.setStage(loader.loadStage(FileLoader.loadBytes(stage_dir + stage_names.get(i))),i);
@@ -204,26 +211,31 @@ public class GameMain extends JFrame implements ActionListener,KeyListener,Playe
 		return numbers;
 	}*/
 
-	GameMain(String title){
-	    setTitle(title);
+	GameMain(String[] args){
+	    setTitle(TITLE);
 	    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 	    
 	    JLayeredPane layer = new JLayeredPane();
 	    
-	    load_stages();
 	    SystemMain.soundManager = soundManager;
+	    if(args.length != 0) {
+	    	load_stages(args.length, new ArrayList<String>(Arrays.asList(args)));
+	    }else {
+	    	load_stages();
+	    }
+	    
 	    Stage cur_stage = load_stage(0);
 	    map = new Map(cur_stage);
 		generator.set_stage(cur_stage);
 		//SystemMain.game_time = cur_stage.getStartingFrame();
 		map.stage_time = cur_stage.getStartingFrame();
-		//デバッグ用
+		//aデバッグ用
 		List<String> l = new ArrayList<>();
-		l.add("music/un.wav");
-		load_files(cur_stage.get_bg_path(), l);
-		//正式
-		//load_files(cur_stage.get_bg_path(), cur_stage.get_bgm_path_list());
+		//l.add("music/un.wav");
+		//load_files(cur_stage.get_bg_path(), l);
+		//a正式
+		load_files(cur_stage.get_bg_path(), cur_stage.get_bgm_path_list());
 		
 	    drawer.set_use_main_screen_bgimage(true);
 	    drawer.set_use_tile(false);
@@ -274,33 +286,6 @@ public class GameMain extends JFrame implements ActionListener,KeyListener,Playe
 			map.setSpellcardBGImage(image);
 			image = ImageIO.read(new File("gui\\infobar.png"));
 			drawer.load_infobar_bgimage(image);
-			//file = new File("mapchip\\mapchips.png");
-			//image = ImageIO.read(file);
-			//drawer.load_mapchips(image);
-			//file = new File("mapchip\\building_chips.gif");
-			//image = ImageIO.read(file);
-			//drawer.load_building_chips(image,BuildingCategory.NONE);
-			//file = new File("mapchip\\house_chips.gif");
-			//image = ImageIO.read(file);
-			//drawer.load_building_chips(image,BuildingCategory.HOUSE);
-			//file = new File("mapchip\\business_chips.png");
-			//image = ImageIO.read(file);
-			//drawer.load_building_chips(image,BuildingCategory.BUSINESS);
-			//file = new File("mapchip\\waychips.png");
-			//image = ImageIO.read(file);
-			//drawer.load_building_chips(image,BuildingCategory.WAY);
-			//file = new File("mapchip\\transport_chips.png");
-			//image = ImageIO.read(file);
-			//drawer.load_building_chips(image,BuildingCategory.TRANSPORT);
-			//file = new File("mapchip\\public_chips.png");
-			//image = ImageIO.read(file);
-			//drawer.load_building_chips(image,BuildingCategory.PUBLIC);
-			//file = new File("mapchip\\millitary_chips.png");
-			//image = ImageIO.read(file);
-			//drawer.load_building_chips(image,BuildingCategory.MILLITARY);
-			//file = new File("mapchip\\nature_chips.png");
-			//image = ImageIO.read(file);
-			//drawer.load_building_chips(image,BuildingCategory.NATURE);
 			load_sprite_chips(SpriteCategory.SHOT);
 			load_sprite_chips(SpriteCategory.NPC);
 			
@@ -322,28 +307,7 @@ public class GameMain extends JFrame implements ActionListener,KeyListener,Playe
 
 	private void set_components(Container contentPane, JLayeredPane layer) {
 		screen = new GameScreen(map,drawer,point);
-		//toolbar = new JPanel();
-		//toolbar.setPreferredSize(new Dimension(128,480));
-		//toolbar.setBackground(new Color(32,32,32));
-		//GridBagLayout gb=new GridBagLayout();
-	   // GridBagConstraints gc=new GridBagConstraints();
-	    //toolbar.setLayout(gb);
-	    
-		//JToggleButton building_button = new JToggleButton(new ImageIcon("gui\\building_button.gif"));
-		//building_button.setPressedIcon(new ImageIcon("gui\\building_button_gray.gif"));
-		//building_button.setSelectedIcon(new ImageIcon("gui\\building_button_gray.gif"));
-		//building_button.setContentAreaFilled(false);
-		//building_button.setBorderPainted(false);
-		//building_button.setFocusPainted(false);
-		//building_button.addChangeListener(this);
-		//JButton debug_button = new JButton(new ImageIcon("gui\\building_button.gif"));
-		//debug_button.addActionListener(this);
-		//contentPane.setLayout(new BorderLayout());
 		contentPane.add("West",screen);
-		//contentPane.add("East",toolbar);
-		//toolbar.setLayout(new GridLayout(10,2));
-		//toolbar.add(building_button);
-		//toolbar.add(debug_button);
 	}
 
 	@Override
@@ -359,7 +323,6 @@ public class GameMain extends JFrame implements ActionListener,KeyListener,Playe
 		}else{
 			convert_point_set(point,temp_point);
 		}
-		//System.out.printf("%d\n", SystemMain.game_time % 120);
 		if((SystemMain.game_time % 120) == 0)generator.generate(map);
 		map.action();
 		screen.repaint();
@@ -387,12 +350,6 @@ public class GameMain extends JFrame implements ActionListener,KeyListener,Playe
 	}
 
 	private void debug_map_show() {
-		/*for(int y = 0;y < SystemMain.screen_tile_ynum;y++){
-			for(int x = 0;x < SystemMain.screen_tile_xnum;x++){
-				System.out.printf("%4d",map.map[x][y]);
-			}
-			System.out.printf("\n");
-		}*/
 	}
 
 	public Point convert_point(Point window_pos){
@@ -438,8 +395,6 @@ public class GameMain extends JFrame implements ActionListener,KeyListener,Playe
 
 	@Override
 	public void keyTyped(KeyEvent arg0) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -479,101 +434,7 @@ public class GameMain extends JFrame implements ActionListener,KeyListener,Playe
 
 	//@Override
 	/*public void stateChanged(ChangeEvent e) {
-		JToggleButton btn = (JToggleButton)e.getSource();
-		if (btn.isSelected()) {
-			System.out.println("Selected");
-	         screen.setBuildingType(1);
-	      } else {
-	    	 screen.setBuildingType(0);
-	    }
 	}*/
-}
-
-@SuppressWarnings("serial")
-class GameScreen extends JPanel implements MouseListener {
-	Drawer drawer_copy;
-	Map map_copy;
-	int inited = 0;
-	Point point_copy;
-	Image buf;
-	Graphics ct;
-	int x_tile,y_tile;
-	BuildingCategory cur_category = BuildingCategory.HOUSE;
-	int cur_type = 0;
-	
-	
-	GameScreen(Map p_map,Drawer p_drawer,Point p_point){
-		drawer_copy = p_drawer;
-		map_copy = p_map;
-		point_copy = p_point;
-		inited = 1;
-		setPreferredSize(new Dimension(640,480));
-		addMouseListener(this);
-	}
-	
-	public void setBuildingType(BuildingCategory category,int type){
-		cur_category = category;
-		cur_type = type;
-	}
-	
-	public void setBuildingType(int type){
-		cur_type = type;
-	}
-	
-	public void init(){
-		buf = createImage(640,480);
-	}
-	
-	//public void update(Graphics g){
-	//	paint(g);
-	//}
-	
-	public void paintComponent(Graphics g){
-		if(buf == null){
-			ct = g;
-		}else{
-			ct = buf.getGraphics();
-		}
-	    drawer_copy.draw((Graphics2D)ct,map_copy);
-		//if((point_copy.x >= 0) & (point_copy.y >= 0)){
-		//	drawer_copy.draw_selected_tile_frame((Graphics2D)ct,SystemMain.get_tile_x(point_copy.x),SystemMain.get_tile_y(point_copy.y));
-		//}
-	    
-		g.drawImage(buf, 0, 0, this);
-	}
-
-	/*@Override
-	public void mouseDragged(MouseEvent arg0) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void mouseMoved(MouseEvent arg0) {
-		point = new Point(arg0.getX(),arg0.getY());
-	}*/
-	
-	@Override
-	public void mouseClicked(MouseEvent arg0) {
-		//x_tile = SystemMain.get_tile_x(arg0.getX());
-		//y_tile = SystemMain.get_tile_x(arg0.getY());
-		
-		//if(map_copy != null){
-		//	map_copy.build(cur_category , cur_type, x_tile, y_tile);
-		//}
-	}
-
-	@Override
-	public void mouseEntered(MouseEvent arg0) {}
-
-	@Override
-	public void mouseExited(MouseEvent arg0) {}
-
-	@Override
-	public void mousePressed(MouseEvent arg0) {}
-
-	@Override
-	public void mouseReleased(MouseEvent arg0) {}
 }
 
 @SuppressWarnings("serial")

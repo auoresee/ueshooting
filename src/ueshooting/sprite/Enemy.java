@@ -33,12 +33,14 @@ public class Enemy extends Mob implements ControlledByAI {
 
 	@Override
 	public void action(Map map){
+		if(!action_flag) return;
 		ai.timeAction();
 		time++;
 	}
 	
 	@Override
 	public void update(Map map){
+		if(!action_flag) return;
 		ai.update();
 	}
 
