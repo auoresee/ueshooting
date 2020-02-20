@@ -27,6 +27,7 @@ public class Player extends Mob {
 	private int invincible_end = 90;
 	public boolean debug_invincible = false;
 	private PlayerBounds playerBoundsSprite = null;
+
 	public Player(int p1, int p2, boolean debug_invincible) {
 		super(0, p1, p2);
 		if(scroll == ScrollDirection.HORIZONTAL)
@@ -149,13 +150,13 @@ public class Player extends Mob {
 		if(key_shift >= SystemMain.KEY_ON){
 			speed = 3;
 			
-			// ‚ ‚½‚è”»’è‚ğ•\¦
+			// ã‚ãŸã‚Šåˆ¤å®šã‚’è¡¨ç¤º
 			showPlayerBounds(true, map);
 		}
 		else {
 			speed = 6;
 			
-			// ‚ ‚½‚è”»’è‚ğ”ñ•\¦
+			// ã‚ãŸã‚Šåˆ¤å®šã‚’éè¡¨ç¤º
 			showPlayerBounds(false, map);
 		}
 		if(key_left >= SystemMain.KEY_ON){
@@ -269,7 +270,7 @@ public class Player extends Mob {
 	}
 	
 	private void die() {
-		//€–S‚ÌƒAƒNƒVƒ‡ƒ“‚È‚Ç‚ğ‹Lq
+		//æ­»äº¡æ™‚ã®ã‚¢ã‚¯ã‚·ãƒ§ãƒ³ãªã©ã‚’è¨˜è¿°
 		if(player_listener != null){
 			if(life <= 0){
 				player_listener.player_gameover();
@@ -308,9 +309,9 @@ public class Player extends Mob {
 		return life;
 	}
 	
-	/// ƒvƒŒƒCƒ„[‚Ì‚ ‚½‚è”»’è‚ğ•\¦
-	/// @param show true ‚È‚ç•\¦. false ‚È‚ç”ñ•\¦.
-	/// @param map true ‚Ìê‡‚Í•K{. false ‚Ìê‡‚Í null ‚Å‚æ‚¢.
+	/// ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã®ã‚ãŸã‚Šåˆ¤å®šã‚’è¡¨ç¤º
+	/// @param show true ãªã‚‰è¡¨ç¤º. false ãªã‚‰éè¡¨ç¤º.
+	/// @param map true ã®å ´åˆã¯å¿…é ˆ. false ã®å ´åˆã¯ null ã§ã‚ˆã„.
 	private void showPlayerBounds(boolean show, Map map) {
 		if (show) {
 			if (playerBoundsSprite == null) {

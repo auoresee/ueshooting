@@ -1,5 +1,9 @@
 package ueshooting.sprite;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import ueshooting.map.Map;
 import ueshooting.stage.EnemyData;
 import ueshooting.stage.Stage;
@@ -10,6 +14,7 @@ public class EnemyGenerator {
 	int type_start;
 	int type_num;
 	int cur_enemy_index = 0;
+	java.util.Map<Integer,Integer> enemyIDMap = new HashMap<>();
 	
 	public EnemyGenerator(){}
 	
@@ -34,8 +39,9 @@ public class EnemyGenerator {
 			cur_enemydata = cur_stage.getEnemyData(cur_enemy_index);
 			if(cur_enemydata.getSpawnTime() > map.stage_time)break;
 			Enemy enemy = new Enemy(cur_enemydata,1,map);
-			enemy.create(1);
-			map.setSprite(enemy);
+			if(cur_enemydata.getSpawnTime() != -1)enemy.create(1);
+			int spriteIndex = map.setSprite(enemy);
+			enemyIDMap.put(cur_enemy_index, spriteIndex);
 		}
 		if(SystemMain.game_time == 120){
 			EnemyData ed = new EnemyData("", 192, 50, 0, (byte) 0, 6, 1000, null);
@@ -49,5 +55,10 @@ public class EnemyGenerator {
 	
 	public void set_stage(Stage cur_stage) {
 		this.cur_stage = cur_stage;
+	}
+
+	public int getID(int valueOfElement) {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 }

@@ -14,7 +14,13 @@ public class ScriptLoader
 	private final char sign_list[] = {'+','-','*','/','^','\\','%','=','{','}','>','<','\"','&','|',',','(',')'};
 	private final String operator_list[] = {"+","-","*","/","^","%","+=","-=","*=","/=","%=","==","=","!=","=!",">","<",">=","<=","&&","||","(",")"};
 	
-	//ƒ‹[ƒg(ŠK‘w0)
+	/**
+	 * ã‚¹ã‚¯ãƒªãƒ—ãƒˆã‚’è§£æã—æ§‹æ–‡æœ¨ã‚’ç”Ÿæˆã™ã‚‹
+	 * ãƒ«ãƒ¼ãƒˆ(éšå±¤0)
+	 * @param source ã‚¹ã‚¯ãƒªãƒ—ãƒˆã®ã‚½ãƒ¼ã‚¹
+	 * @return Script æ§‹æ–‡æœ¨
+	 * @throws ScriptSyntaxException
+	 */
 	public Script generateTree(String source) throws ScriptSyntaxException
 	{
 		Script root = new Script(TreeElementType.ROOT);
@@ -28,7 +34,7 @@ public class ScriptLoader
 		return root;
 	}
 	
-	//ŠK‘w1
+	//éšå±¤1
 	private TreeElement generateTreeLabel(String source) throws ScriptSyntaxException {
 		TreeElement parent = null;
 
@@ -86,7 +92,7 @@ public class ScriptLoader
 		return parent;
 	}
 
-	//ŠK‘w2
+	//éšå±¤2
 	private TreeElement generateTreeLine(String source) throws ScriptSyntaxException {
 		ScriptToken token = getToken(source);
 		if(token.body.equals("}")) {
@@ -111,49 +117,75 @@ public class ScriptLoader
 		}
 		else {
 			ParameterFormat format = ParameterFormat.getParameterFormat(command);
-			for(int i = 0;i < format.format_specifiers.length;i++){
-				if(pos >= source.length()) throw new ScriptSyntaxException("Expecting argument", pos);
-				parent.addChild(getParameter(source, format.format_specifiers[i]));
-				//System.out.println(pos);
-			}
+			parent.addChilds(getParameters(source, format));
 		}
 		seekNextLine(source);
 		return parent;
+	}
+	
+	private List<TreeElement> getParameters(String source, ParameterFormat format) throws ScriptSyntaxException {
+		List<TreeElement> ret = new ArrayList<>();
+		for(int i = 0;i < format.format_specifiers.length;i++){
+			if(pos >= source.length()) throw new ScriptSyntaxException("Expecting argument", pos);
+			List<TreeElement> ltmp = getExpression(source, ParameterType.ANY);
+			if(ltmp.size() == 0) {
+				throw new ScriptSyntaxException("Parameters cannot be omitted", pos);
+			}
+			else if(ltmp.size() == 1) {
+				ret.add(ltmp.get(0));
+			}
+			else {
+				TreeElement tmp = new TreeElement(TreeElementType.EXPRESSION);
+				ltmp = toPostfixNotation(ltmp);	//é€†ãƒãƒ¼ãƒ©ãƒ³ãƒ‰é †ã«å¤‰æ›
+				tmp.addChilds(ltmp);
+				ret.add(tmp);
+			}
+			System.out.println(pos);
+		}
+		return ret;
 	}
 
 	private List<TreeElement> getAssignmentExpression(String source) throws ScriptSyntaxException {
 		List<TreeElement> ret = new ArrayList<>();
 		
+		//å·¦è¾ºã®å¤‰æ•°ã‚’å–å¾—
 		ParameterFormatSpecifier format = new ParameterFormatSpecifier(ParameterType.VAR_ANY);
 		TreeElement child = getParameter(source, format);
-		ParameterType varType = getVariableParameterType((ScriptVariable) child.data);
-		if(varType == ParameterType.VAR_ANY) varType = ParameterType.ANY;
+		//ParameterType varType = getVariableParameterType((ScriptSpecialVariable) child.data);
+		ret.add(child);
+		
+		//varTypeã‚’å¤‰æ•°å‹â†’å€¤å‹ã«å¤‰æ› (å¾Œã®å‡¦ç†ã®ãŸã‚)ã€€
+		/*if(varType == ParameterType.VAR_ANY) varType = ParameterType.ANY;
 		if(varType == ParameterType.VAR_INT || varType == ParameterType.VAR_DOUBLE) varType = ParameterType.DOUBLE_OR_INT;
 		if(varType == ParameterType.VAR_STRING) varType = ParameterType.STRING;
-		if(varType == ParameterType.VAR_BOOLEAN) varType = ParameterType.BOOLEAN;
-		ret.add(child);
+		if(varType == ParameterType.VAR_BOOLEAN) varType = ParameterType.BOOLEAN;*/
+		
+		//ä»£å…¥æ¼”ç®—å­ã‚’å–å¾—
 		format = new ParameterFormatSpecifier("=","+=","-=","*=","/=","%=","=!");
 		child = getParameter(source, format);
-		if(!isOperatorCompatible((String) child.data, varType)){
-			throw new ScriptSyntaxException(String.format("Incompatible operator %s with type %s", (String) child.data, varType.toString()), pos);
-		}
+		//if(!isOperatorCompatible((String) child.data, varType)){	//ä½¿ãˆãªã„æ¼”ç®—å­ã®çµ„ã¿åˆã‚ã›(æ–‡å­—åˆ—å‹ã«-=ãªã©)ãªã‚‰ã‚¨ãƒ©ãƒ¼
+		//	throw new ScriptSyntaxException(String.format("Incompatible operator %s with type %s", (String) child.data, varType.toString()), pos);
+		//}
 		ret.add(child);
-		List<TreeElement> elements = getExpression(source, varType);
+		
+		//å³è¾ºã‚’å–å¾—
+		List<TreeElement> elements = getExpression(source, ParameterType.ANY);
 		elements = toPostfixNotation(elements);
-		child = new TreeElement(TreeElementType.L_ARRAY);
+		child = new TreeElement(TreeElementType.EXPRESSION);
 		child.list = elements;
 		ret.add(child);
 		return ret;
 	}
 
 	/**
-	 * ‹tƒ|[ƒ‰ƒ“ƒh‹L–@‚É•ÏŠ·
+	 * å¼ã‚’å‡¦ç†ã—ãƒˆãƒ¼ã‚¯ãƒ³ã®ãƒªã‚¹ãƒˆã‚’å–å¾—
+	 * (é€†ãƒãƒ¼ãƒ©ãƒ³ãƒ‰é †ã«ã¯ã—ãªã„)
+	 * @param source
+	 * @param pType
+	 * @return
+	 * @throws ScriptSyntaxException
 	 */
-	private List<TreeElement> toPostfixNotation(List<TreeElement> elements) {
-		return shunting_yard(elements);
-	}
-
-	private List<TreeElement> getExpression(String source, ParameterType varType) throws ScriptSyntaxException {
+	private List<TreeElement> getExpression(String source, ParameterType pType) throws ScriptSyntaxException {
 		List<TreeElement> ret = new ArrayList<>();
 		
 		prev_pos = pos;
@@ -169,17 +201,7 @@ public class ScriptLoader
 		
 		ParameterFormatSpecifier format = new ParameterFormatSpecifier(ParameterType.ANY);
 		TreeElement child = getParameter(source, format);
-		if(child.type == TreeElementType.VARIABLE){
-			ParameterType type = getVariableParameterType((ScriptVariable) child.data);
-			if(!isOperandTypesCompatible(type, varType)){
-				throw new ScriptSyntaxException(String.format("Incompatible operand types %s and %s", varType.toString(), getVariableParameterType((ScriptVariable) child.data).toString()), pos);
-			}
-		}
-		else{
-			if(!isOperandTypesCompatible(child.type, varType)){
-				throw new ScriptSyntaxException(String.format("Incompatible operand types %s and %s", varType.toString(), getVariableParameterType((ScriptVariable) child.data).toString()), pos);
-			}
-		}
+		
 		ret.add(child);
 		while(true){
 			format = new ParameterFormatSpecifier("+","-","*","/","%","^");
@@ -194,12 +216,12 @@ public class ScriptLoader
 			else {
 				pos = prev_pos;
 			}
-			if(t.type == TokenType.BREAK || t.type == TokenType.EOF){
+			if(t.type == TokenType.BREAK || t.type == TokenType.EOF || t.body.equals(",")){
 				break;
 			}
 			child = getParameter(source, format);
-			if(!isOperatorCompatible((String) child.data, varType)){
-				throw new ScriptSyntaxException(String.format("Incompatible operator %s with type %s", (String) child.data, varType.toString()), pos);
+			if(!isOperatorCompatible((String) child.data, pType)){
+				throw new ScriptSyntaxException(String.format("Incompatible operator %s with type %s", (String) child.data, pType.toString()), pos);
 			}
 			ret.add(child);
 			prev_pos = pos;
@@ -213,28 +235,18 @@ public class ScriptLoader
 			}
 			format = new ParameterFormatSpecifier(ParameterType.ANY);
 			child = getParameter(source, format);
-			if(child.type == TreeElementType.VARIABLE){
-				ParameterType type = getVariableParameterType((ScriptVariable) child.data);
-				if(!isOperandTypesCompatible(type, varType)){
-					throw new ScriptSyntaxException(String.format("Incompatible operand types %s and %s", varType.toString(), getVariableParameterType((ScriptVariable) child.data).toString()), pos);
-				}
-			}
-			else{
-				if(!isOperandTypesCompatible(child.type, varType)){
-					throw new ScriptSyntaxException(String.format("Incompatible operand types %s and %s", varType.toString(), getVariableParameterType((ScriptVariable) child.data).toString()), pos);
-				}
-			}
+
 			ret.add(child);
 		}
 		return ret;
 	}
 	
-	// ‰‰Zq
-	// —Dæ‡ˆÊ : ‰‰Zq : Œ‹‡«
-	// 4 :   !   : ‰EŒ‹‡«
-	// 3 : * / % : ¶Œ‹‡«
-	// 2 :  + -  : ¶Œ‹‡«
-	// 1 :   =   : ‰EŒ‹‡«
+	// æ¼”ç®—å­
+	// å„ªå…ˆé †ä½ : æ¼”ç®—å­ : çµåˆæ€§
+	// 4 :   !   : å³çµåˆæ€§
+	// 3 : * / % : å·¦çµåˆæ€§
+	// 2 :  + -  : å·¦çµåˆæ€§
+	// 1 :   =   : å³çµåˆæ€§
 	int op_preced(String c)
 	{
 	    switch (c) {
@@ -253,50 +265,44 @@ public class ScriptLoader
 	boolean op_left_assoc(String c)
 	{
 	    switch (c) {
-	        // ¶Œ‹‡«
+	        // å·¦çµåˆæ€§
 	        case "*": case "/": case "%": case "+": case "-":
 	            return true;
-	        // ‰EŒ‹‡«
+	        // å³çµåˆæ€§
 	        case "=": case "!":
 	            return false;
 	    }
 	    return false;
 	}
-	 
-	private int op_arg_count(TreeElement c)
-	{
-	    switch (c.data.toString()) {
-	        case "*": case "/": case "%": case "+": case "-": case "=":
-	            return 2;
-	        case "!":
-	            return 1;
-	        default: // ŠÖ”‚Ìê‡AA()‚Ìˆø”‚Í0ŒÂAB()‚Ìˆø”‚Í1ŒÂAC()‚Ìˆø”‚Í2ŒÂ... ‚Æ’è‹`
-	            return 0;
-	    }
-	}
 	
-	private List<TreeElement> shunting_yard(List<TreeElement> input)
+	/**
+	 * å¼ã‚’é€†ãƒãƒ¼ãƒ©ãƒ³ãƒ‰è¨˜æ³•ã«å¤‰æ›
+	 * 
+	 * @param input
+	 * @return
+	 */
+	private List<TreeElement> toPostfixNotation(List<TreeElement> input)
 	{
 		List<TreeElement> output = new ArrayList<>();
 	    int index = 0;
 	    TreeElement c;
 		char outpos;// = output;
 	 
-		TreeElement[] stack = new TreeElement[32];       // ‰‰ZqƒXƒ^ƒbƒN
-	    int stackLength = 0;  // ƒXƒ^ƒbƒN’·i[‚³j
-	    TreeElement stackCounter;              // ƒXƒ^ƒbƒN—v‘f‚Ì‹L˜^—p
+		TreeElement[] stack = new TreeElement[32];       // æ¼”ç®—å­ã‚¹ã‚¿ãƒƒã‚¯
+	    int stackLength = 0;  // ã‚¹ã‚¿ãƒƒã‚¯é•·ï¼ˆæ·±ã•ï¼‰
+	    TreeElement stackCounter;              // ã‚¹ã‚¿ãƒƒã‚¯è¦ç´ ã®è¨˜éŒ²ç”¨
 	 
 	    while (index < input.size()) {
-	        // “ü—ÍƒXƒgƒŠ[ƒ€‚©‚çƒg[ƒNƒ“‚ğ1‚Â“Ç‚İ‚Ş
+	        // å…¥åŠ›ã‚¹ãƒˆãƒªãƒ¼ãƒ ã‹ã‚‰ãƒˆãƒ¼ã‚¯ãƒ³ã‚’1ã¤èª­ã¿è¾¼ã‚€
 	        c = input.get(index);
 	        if (c.type.isLiteral() || c.type == TreeElementType.VARIABLE) {
-	            // ƒg[ƒNƒ“‚ª”’li¯•Êqj‚È‚çAo—ÍƒLƒ…[‚É’Ç‰Á‚·‚é
+	            // ãƒˆãƒ¼ã‚¯ãƒ³ãŒæ•°å€¤ï¼ˆè­˜åˆ¥å­ï¼‰ãªã‚‰ã€å‡ºåŠ›ã‚­ãƒ¥ãƒ¼ã«è¿½åŠ ã™ã‚‹
 	            output.add(c);
 	        } else if (c.type == TreeElementType.FUNCTION_CALL) {
-	            // ƒg[ƒNƒ“‚ªŠÖ”‚È‚çAƒXƒ^ƒbƒN‚ÉƒvƒbƒVƒ…‚·‚éB
+	            // ãƒˆãƒ¼ã‚¯ãƒ³ãŒé–¢æ•°ãªã‚‰ã€ã‚¹ã‚¿ãƒƒã‚¯ã«ãƒ—ãƒƒã‚·ãƒ¥ã™ã‚‹ã€‚
 	            stack[stackLength++] = c;
 	        } else if (((String)c.data).equals(",")) {
-	            // ƒg[ƒNƒ“‚ªŠÖ”‚Ìˆø”‚ÌƒZƒpƒŒ[ƒ^i—á‚¦‚ÎƒJƒ“ƒ}j‚Ìê‡
+	            // ãƒˆãƒ¼ã‚¯ãƒ³ãŒé–¢æ•°ã®å¼•æ•°ã®ã‚»ãƒ‘ãƒ¬ãƒ¼ã‚¿ï¼ˆä¾‹ãˆã°ã‚«ãƒ³ãƒï¼‰ã®å ´åˆ
 	            boolean pe = false;
 	            while (stackLength > 0) {
 	                stackCounter = stack[stack.length - 1];
@@ -304,29 +310,29 @@ public class ScriptLoader
 	                    pe = true;
 	                    break;
 	                } else {
-	                    // ƒXƒ^ƒbƒN‚Ìƒgƒbƒv‚Ìƒg[ƒNƒ“‚ª¶Š‡ŒÊ‚É‚È‚é‚Ü‚Å
-	                    // ƒXƒ^ƒbƒNã‚Ì‰‰Zq‚ğo—ÍƒLƒ…[‚Éƒ|ƒbƒv‚µ‘±‚¯‚é
+	                    // ã‚¹ã‚¿ãƒƒã‚¯ã®ãƒˆãƒƒãƒ—ã®ãƒˆãƒ¼ã‚¯ãƒ³ãŒå·¦æ‹¬å¼§ã«ãªã‚‹ã¾ã§
+	                    // ã‚¹ã‚¿ãƒƒã‚¯ä¸Šã®æ¼”ç®—å­ã‚’å‡ºåŠ›ã‚­ãƒ¥ãƒ¼ã«ãƒãƒƒãƒ—ã—ç¶šã‘ã‚‹
 	                	output.add(stackCounter);
 	                    stackLength--;
 	                }
 	            }
-	            // ¶Š‡ŒÊ‚ªo‚Ä‚±‚È‚©‚Á‚½ê‡A‚·‚È‚í‚¿ƒZƒpƒŒ[ƒ^‚ÌˆÊ’u‚ª•Ï‚¾‚Á‚½ê‡
-	            // ‚ ‚é‚¢‚ÍŠ‡ŒÊ‚ª³‚µ‚­‘Î‰‚µ‚Ä‚¢‚È‚¢ê‡
+	            // å·¦æ‹¬å¼§ãŒå‡ºã¦ã“ãªã‹ã£ãŸå ´åˆã€ã™ãªã‚ã¡ã‚»ãƒ‘ãƒ¬ãƒ¼ã‚¿ã®ä½ç½®ãŒå¤‰ã ã£ãŸå ´åˆ
+	            // ã‚ã‚‹ã„ã¯æ‹¬å¼§ãŒæ­£ã—ãå¯¾å¿œã—ã¦ã„ãªã„å ´åˆ
 	            if (!pe) {
-	                System.out.printf("ƒGƒ‰[FƒZƒpƒŒ[ƒ^‚©Š‡ŒÊ‚Ì•sˆê’v\n");
+	                System.out.printf("ã‚¨ãƒ©ãƒ¼ï¼šã‚»ãƒ‘ãƒ¬ãƒ¼ã‚¿ã‹æ‹¬å¼§ã®ä¸ä¸€è‡´\n");
 	                return null;
 	            }
 	        } else if (c.type == TreeElementType.OPERATOR && !((String)c.data).equals("(") && !((String)c.data).equals(")")) {
-	            // ƒg[ƒNƒ“‚ª‰‰Zq op1 ‚Ìê‡
+	            // ãƒˆãƒ¼ã‚¯ãƒ³ãŒæ¼”ç®—å­ op1 ã®å ´åˆ
 	            while (stackLength > 0) {
 	                stackCounter = stack[stackLength - 1];
-	                // op1 ‚ª¶Œ‹‡«‚Å—Dæ‡ˆÊ‚ª op2 ‚Æ“™‚µ‚¢‚©’á‚¢ê‡
-	                // ‚ ‚é‚¢‚Í op1 ‚Ì—Dæ‡ˆÊ‚ª op2 ‚æ‚è’á‚¢ê‡
-	                // ‰‰Zqƒg[ƒNƒ“ op2 ‚ªƒXƒ^ƒbƒN‚Ìƒgƒbƒv‚É‚ ‚éŠÔƒ‹[ƒv‚·‚éB
-	                // 1^2+3 ‚Ì‚æ‚¤‚È®‚ğ³‚µ‚­ 12^3+ ‚É•ÏŠ·‚·‚é‚½‚ß
-	                // "+" ‚Æ "^" ‚Í‰EŒ‹‡«‚Æ‚·‚éB
-	                // ‰‰Zq‚Ì—Dæ‡ˆÊ‚Ìˆá‚¢‚©‚çƒ|ƒbƒv‚·‚é‚©ƒvƒbƒVƒ…‚·‚é‚©‚ğ”»’f‚·‚éB
-	                // 2‚Â‚Ì‰‰Zq‚Ì—Dæ‡ˆÊ‚ª“™‚µ‚¢‚È‚çAŒ‹‡«‚©‚ç”»’f‚·‚éB
+	                // op1 ãŒå·¦çµåˆæ€§ã§å„ªå…ˆé †ä½ãŒ op2 ã¨ç­‰ã—ã„ã‹ä½ã„å ´åˆ
+	                // ã‚ã‚‹ã„ã¯ op1 ã®å„ªå…ˆé †ä½ãŒ op2 ã‚ˆã‚Šä½ã„å ´åˆ
+	                // æ¼”ç®—å­ãƒˆãƒ¼ã‚¯ãƒ³ op2 ãŒã‚¹ã‚¿ãƒƒã‚¯ã®ãƒˆãƒƒãƒ—ã«ã‚ã‚‹é–“ãƒ«ãƒ¼ãƒ—ã™ã‚‹ã€‚
+	                // 1^2+3 ã®ã‚ˆã†ãªå¼ã‚’æ­£ã—ã 12^3+ ã«å¤‰æ›ã™ã‚‹ãŸã‚
+	                // "+" ã¨ "^" ã¯å³çµåˆæ€§ã¨ã™ã‚‹ã€‚
+	                // æ¼”ç®—å­ã®å„ªå…ˆé †ä½ã®é•ã„ã‹ã‚‰ãƒãƒƒãƒ—ã™ã‚‹ã‹ãƒ—ãƒƒã‚·ãƒ¥ã™ã‚‹ã‹ã‚’åˆ¤æ–­ã™ã‚‹ã€‚
+	                // 2ã¤ã®æ¼”ç®—å­ã®å„ªå…ˆé †ä½ãŒç­‰ã—ã„ãªã‚‰ã€çµåˆæ€§ã‹ã‚‰åˆ¤æ–­ã™ã‚‹ã€‚
 	                if (stackCounter.type == TreeElementType.OPERATOR &&
 	                    ((op_left_assoc((String) c.data) && (op_preced((String) c.data) <= op_preced((String) stackCounter.data))) ||
 	                        (op_preced((String) c.data) < op_preced((String) stackCounter.data)))) {
@@ -337,32 +343,32 @@ public class ScriptLoader
 	                    break;
 	                }
 	            }
-	            // op1 ‚ğƒXƒ^ƒbƒN‚ÉƒvƒbƒVƒ…
+	            // op1 ã‚’ã‚¹ã‚¿ãƒƒã‚¯ã«ãƒ—ãƒƒã‚·ãƒ¥
 	            stack[stackLength++] = c;
 	        } else if (((String)c.data).equals("(")) {
-	            // ƒg[ƒNƒ“‚ª¶Š‡ŒÊ‚È‚çAƒXƒ^ƒbƒN‚ÉƒvƒbƒVƒ…
+	            // ãƒˆãƒ¼ã‚¯ãƒ³ãŒå·¦æ‹¬å¼§ãªã‚‰ã€ã‚¹ã‚¿ãƒƒã‚¯ã«ãƒ—ãƒƒã‚·ãƒ¥
 	            stack[stackLength++] = c;
 	        } else if (((String)c.data).equals(")")) {
-	            // ƒg[ƒNƒ“‚ª‰EŠ‡ŒÊ‚Ìê‡
+	            // ãƒˆãƒ¼ã‚¯ãƒ³ãŒå³æ‹¬å¼§ã®å ´åˆ
 	            boolean pe = false;
-	            // ƒXƒ^ƒbƒN‚Ìƒgƒbƒv‚É‚ ‚éƒg[ƒNƒ“‚ª¶Š‡ŒÊ‚É‚È‚é‚Ü‚Å
-	            // ƒXƒ^ƒbƒN‚©‚ço—ÍƒLƒ…[‚É‰‰Zq‚ğƒ|ƒbƒv‚µ‘±‚¯‚é
+	            // ã‚¹ã‚¿ãƒƒã‚¯ã®ãƒˆãƒƒãƒ—ã«ã‚ã‚‹ãƒˆãƒ¼ã‚¯ãƒ³ãŒå·¦æ‹¬å¼§ã«ãªã‚‹ã¾ã§
+	            // ã‚¹ã‚¿ãƒƒã‚¯ã‹ã‚‰å‡ºåŠ›ã‚­ãƒ¥ãƒ¼ã«æ¼”ç®—å­ã‚’ãƒãƒƒãƒ—ã—ç¶šã‘ã‚‹
 	            while (stackLength > 0) {
 	                stackCounter = stack[--stackLength];
 	                if (((String)stackCounter.data).equals("(")) {
-	                    // ƒXƒ^ƒbƒN‚©‚ç¶Š‡ŒÊ‚ğƒ|ƒbƒv‚·‚é‚ªAo—ÍƒLƒ…[‚É‚Í’u‚©‚È‚¢
+	                    // ã‚¹ã‚¿ãƒƒã‚¯ã‹ã‚‰å·¦æ‹¬å¼§ã‚’ãƒãƒƒãƒ—ã™ã‚‹ãŒã€å‡ºåŠ›ã‚­ãƒ¥ãƒ¼ã«ã¯ç½®ã‹ãªã„
 	                    pe = true;
 	                    break;
 	                } else {
 	                	output.add(stackCounter);
 	                }
 	            }
-	            // ƒXƒ^ƒbƒN‚ğ‘S•”Œ©‚Ä‚à¶Š‡ŒÊ‚É“’B‚µ‚È‚©‚Á‚½ê‡A¶‰E‚ÌŠ‡ŒÊ‚Ì•sˆê’v‚ª‚ ‚é‚±‚Æ‚É‚È‚é
+	            // ã‚¹ã‚¿ãƒƒã‚¯ã‚’å…¨éƒ¨è¦‹ã¦ã‚‚å·¦æ‹¬å¼§ã«åˆ°é”ã—ãªã‹ã£ãŸå ´åˆã€å·¦å³ã®æ‹¬å¼§ã®ä¸ä¸€è‡´ãŒã‚ã‚‹ã“ã¨ã«ãªã‚‹
 	            if (!pe) {
-	                System.out.printf("ƒGƒ‰[FŠ‡ŒÊ‚Ì•sˆê’v\n");
+	                System.out.printf("ã‚¨ãƒ©ãƒ¼ï¼šæ‹¬å¼§ã®ä¸ä¸€è‡´\n");
 	                return null;
 	            }
-	            // ƒXƒ^ƒbƒN‚Ìƒgƒbƒv‚É‚ ‚éƒg[ƒNƒ“‚ªŠÖ”ƒg[ƒNƒ“‚È‚çA‚»‚ê‚ğo—ÍƒLƒ…[‚Éƒ|ƒbƒv‚·‚é
+	            // ã‚¹ã‚¿ãƒƒã‚¯ã®ãƒˆãƒƒãƒ—ã«ã‚ã‚‹ãƒˆãƒ¼ã‚¯ãƒ³ãŒé–¢æ•°ãƒˆãƒ¼ã‚¯ãƒ³ãªã‚‰ã€ãã‚Œã‚’å‡ºåŠ›ã‚­ãƒ¥ãƒ¼ã«ãƒãƒƒãƒ—ã™ã‚‹
 	            if (stackLength > 0) {
 	                stackCounter = stack[stackLength - 1];
 	                if (stackCounter.type == TreeElementType.FUNCTION_CALL) {
@@ -371,17 +377,17 @@ public class ScriptLoader
 	                }
 	            }
 	        } else {
-	        	System.out.printf("•s–¾‚Èƒg[ƒNƒ“F%c\n", c);
-	            return null; // •s–¾‚Èƒg[ƒNƒ“
+	        	System.out.printf("ä¸æ˜ãªãƒˆãƒ¼ã‚¯ãƒ³ï¼š%c\n", c);
+	            return null; // ä¸æ˜ãªãƒˆãƒ¼ã‚¯ãƒ³
 	        }
 	        index++;
 	    }
-	    // “Ç‚İ‚Ş‚×‚«ƒg[ƒNƒ“‚ªs‚«‚½Û
-	    // ƒXƒ^ƒbƒNã‚É‰‰Zqƒg[ƒNƒ“‚ªc‚Á‚Ä‚¢‚½‚çA‚»‚ê‚ç‚ğo—Í‚·‚é
+	    // èª­ã¿è¾¼ã‚€ã¹ããƒˆãƒ¼ã‚¯ãƒ³ãŒå°½ããŸéš›
+	    // ã‚¹ã‚¿ãƒƒã‚¯ä¸Šã«æ¼”ç®—å­ãƒˆãƒ¼ã‚¯ãƒ³ãŒæ®‹ã£ã¦ã„ãŸã‚‰ã€ãã‚Œã‚‰ã‚’å‡ºåŠ›ã™ã‚‹
 	    while (stackLength > 0) {
 	        stackCounter = stack[--stackLength];
 	        if (((String)stackCounter.data).equals("(") || ((String)stackCounter.data).equals(")")) {
-	            System.out.printf("ƒGƒ‰[FŠ‡ŒÊ‚Ì•sˆê’v\n");
+	            System.out.printf("ã‚¨ãƒ©ãƒ¼ï¼šæ‹¬å¼§ã®ä¸ä¸€è‡´\n");
 	            return null;
 	        }
 	        output.add(stackCounter);
@@ -421,7 +427,7 @@ public class ScriptLoader
 		if(token.type == TokenType.NONE) throw new ScriptSyntaxException("Expecting argument", pos);
 		TreeElement parent;
 		if(parameter.type == ParameterType.OPERATOR){
-			token = getToken(source);	//ˆê“x–ß‚µ‚½pos‚ği‚ß‚é‚½‚ß
+			token = getToken(source);	//ä¸€åº¦æˆ»ã—ãŸposã‚’é€²ã‚ã‚‹ãŸã‚
 			if(token.type != TokenType.SIGN) throw new ScriptSyntaxException("Invalid operator", pos);
 			String str = token.body;
 			for(int i = 0;i < operator_list.length;i++){
@@ -451,7 +457,7 @@ public class ScriptLoader
 				parent.data = str;
 			}
 			else if(token.type == TokenType.ALPHABET){
-				token = getToken(source);	//ˆê“x–ß‚µ‚½pos‚ği‚ß‚é‚½‚ß
+				token = getToken(source);	//ä¸€åº¦æˆ»ã—ãŸposã‚’é€²ã‚ã‚‹ãŸã‚
 				if(token.body.equals("true")){
 					parent = new TreeElement(TreeElementType.L_BOOLEAN);
 					parent.data = true;
@@ -461,28 +467,29 @@ public class ScriptLoader
 					parent.data = false;
 				}
 				else{
-					ScriptVariable var = ScriptVariable.getVariable(token.body);
-					if(var == null) {
-						throw new ScriptSyntaxException("Undefined variable name", pos);
+					if(!checkVarName(token.body)) {		//å¤‰æ•°åãŒäºˆç´„èªã§ãªã„ã‹ãƒã‚§ãƒƒã‚¯
+						throw new ScriptSyntaxException("Invalid variable name \"" + token.body + "\"", pos);
 					}
+					parent = new TreeElement(TreeElementType.VARIABLE);
+					parent.data = token.body;
+				}
 					//if(getVariableParameterType(var) != parameter.type) {
 					//	throw new ScriptSyntaxException("incompatible type for the argument", pos);
 					//}
-					if(token.body.equals("D") || token.body.equals("E") || token.body.equals("F") || token.body.equals("G")){
-						parent = new TreeElement(TreeElementType.VARIABLE);
+					/*if(token.body.equals("D") || token.body.equals("E") || token.body.equals("F") || token.body.equals("G")){
+						parent = new TreeElement(TreeElementType.SPECIAL_VARIABLE);
 						if(!getToken(source).body.equals("["))throw new ScriptSyntaxException("Invalid argument", pos);
 						var.index = (int) getLiteralRealNumber(source);
 						if(!getToken(source).body.equals("]"))throw new ScriptSyntaxException("Invalid argument", pos);
 						parent.data = var;
 					}
 					else{
-						parent = new TreeElement(TreeElementType.VARIABLE);
+						parent = new TreeElement(TreeElementType.SPECIAL_VARIABLE);
 						parent.data = var;
-					}
-				}
+					}*/
 			}
 			else if(token.body.equals("*")){
-				token = getToken(source);	//ˆê“x–ß‚µ‚½pos‚ği‚ß‚é‚½‚ß
+				token = getToken(source);	//ä¸€åº¦æˆ»ã—ãŸposã‚’é€²ã‚ã‚‹ãŸã‚
 				ScriptToken token2 = getToken(source);
 				if(token2.type != TokenType.ALPHABET) throw new ScriptSyntaxException("Invalid argument", pos);
 				String str = token2.body;
@@ -501,10 +508,7 @@ public class ScriptLoader
 					return parent;
 				}
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_INT) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case DOUBLE_OR_INT:
@@ -513,11 +517,7 @@ public class ScriptLoader
 					return parent;
 				}
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_DOUBLE ||
-							getVariableParameterType(var) == ParameterType.VAR_INT) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case DOUBLE_INT_BOOLEAN:
@@ -527,12 +527,7 @@ public class ScriptLoader
 					return parent;
 				}
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_DOUBLE ||
-							getVariableParameterType(var) == ParameterType.VAR_INT ||
-							getVariableParameterType(var) == ParameterType.VAR_BOOLEAN) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case STRING:
@@ -540,10 +535,7 @@ public class ScriptLoader
 					return parent;
 				}
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_STRING) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case BOOLEAN:
@@ -551,10 +543,7 @@ public class ScriptLoader
 					return parent;
 				}
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_BOOLEAN) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case PROCEDURE:
@@ -569,59 +558,32 @@ public class ScriptLoader
 				break;
 			case VAR_INT:
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_INT ||
-							getVariableParameterType(var) == ParameterType.VAR_ANY) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case VAR_DOUBLE:
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_DOUBLE ||
-							getVariableParameterType(var) == ParameterType.VAR_ANY) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case VAR_DOUBLE_OR_INT:
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_DOUBLE ||
-							getVariableParameterType(var) == ParameterType.VAR_INT ||
-							getVariableParameterType(var) == ParameterType.VAR_ANY) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case VAR_DOUBLE_INT_BOOLEAN:
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_DOUBLE ||
-							getVariableParameterType(var) == ParameterType.VAR_INT ||
-							getVariableParameterType(var) == ParameterType.VAR_BOOLEAN ||
-							getVariableParameterType(var) == ParameterType.VAR_ANY) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case VAR_STRING:
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_STRING ||
-							getVariableParameterType(var) == ParameterType.VAR_ANY) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			case VAR_BOOLEAN:
 				if(parent.type == TreeElementType.VARIABLE){
-					ScriptVariable var = (ScriptVariable) parent.data;
-					if(getVariableParameterType(var) == ParameterType.VAR_BOOLEAN ||
-							getVariableParameterType(var) == ParameterType.VAR_ANY) {
-						return parent;
-					}
+					return parent;
 				}
 				break;
 			default:
@@ -631,62 +593,14 @@ public class ScriptLoader
 		throw new ScriptSyntaxException("Invalid argument", pos);
 	}
 
-	private ParameterType getVariableParameterType(ScriptVariable var) {
-		switch(var){
-		case VAR_a:
-		case VAR_b:
-		case VAR_c:
-		case VAR_d:
-		case VAR_e:
-		case VAR_f:
-		case VAR_g:
-		case VAR_h:
-		case VAR_i:
-		case VAR_j:
-		case VAR_k:
-		case VAR_l:
-		case VAR_T:
-		case VAR_D:
-		case VAR_E:
-			return ParameterType.VAR_INT;
-			
-		case VAR_m:
-		case VAR_n:
-		case VAR_o:
-			return ParameterType.VAR_BOOLEAN;
-			
-		case VAR_p:
-		case VAR_q:
-		case VAR_r:
-		case VAR_s:
-		case VAR_t:
-		case VAR_u:
-		case VAR_v:
-		case VAR_w:
-		case VAR_x:
-		case VAR_y:
-		case VAR_z:
-		case VAR_A:
-		case VAR_H:
-		case VAR_I:
-		case VAR_J:
-		case VAR_P:
-		case VAR_V:
-		case VAR_X:
-		case VAR_Y:
-		case VAR_R:
-		case VAR_F:
-		case VAR_G:
-			return ParameterType.VAR_DOUBLE;
-			
-		case VAR_B:
-		case VAR_C:
-			return ParameterType.VAR_STRING;
-			
-		case VAR_N:
-			return ParameterType.VAR_ANY;
-		}
-		return null;
+	/**
+	 * å¤‰æ•°åãŒäºˆç´„èªã§ãªã„ã‹ãƒã‚§ãƒƒã‚¯ (æœªå®Ÿè£…)
+	 * @param body
+	 * @return
+	 */
+	private boolean checkVarName(String body) {
+		// TODO Auto-generated method stub
+		return true;
 	}
 
 	private String getLiteralString(String source) throws ScriptSyntaxException {
@@ -730,152 +644,8 @@ public class ScriptLoader
 		}
 	}
 
-	private ScriptCommand getCommand(String body) {
-		switch(body){
-		case "move":
-			return ScriptCommand.MOVE;
-		case "print":
-			return ScriptCommand.PRINT;
-		case "push":
-			return ScriptCommand.PUSH;
-		case "pop":
-			return ScriptCommand.POP;
-		case "stype":
-			return ScriptCommand.STYPE;
-			
-		case "call":
-			return ScriptCommand.CALL;
-		case "jump":
-			return ScriptCommand.JUMP;
-		case "if":
-			return ScriptCommand.IF;
-		case "bif":
-			return ScriptCommand.BIF;
-		case "else":
-			return ScriptCommand.ELSE;
-		case "elseif":
-			return ScriptCommand.ELSEIF;
-		case "ifend":
-			return ScriptCommand.IFEND;
-		case "while":
-			return ScriptCommand.WHILE;
-		case "for":
-			return ScriptCommand.FOR;
-		case "lend":
-			return ScriptCommand.LEND;
-		case "break":
-			return ScriptCommand.BREAK;
-		case "continue":
-			return ScriptCommand.CONTINUE;
-			
-		case "let":
-			return ScriptCommand.LET;
-		case "letv":
-			return ScriptCommand.LETV;
-		case "cmp":
-			return ScriptCommand.CMP;
-		case "sqrt":
-			return ScriptCommand.SQRT;
-		case "exp":
-			return ScriptCommand.EXP;
-		case "torect":
-			return ScriptCommand.TORECT;
-		case "topolar":
-			return ScriptCommand.TOPOLAR;
-		case "dis":
-			return ScriptCommand.DISTANCE;
-		case "sin":
-			return ScriptCommand.SIN;
-		case "cos":
-			return ScriptCommand.COS;
-		case "tan":
-			return ScriptCommand.TAN;
-		case "atan":
-			return ScriptCommand.ATAN;
-		case "atan2":
-			return ScriptCommand.ATAN2;
-		case "log":
-			return ScriptCommand.LOG;
-		case "random":
-			return ScriptCommand.RANDOM;
-		case "random2":
-			return ScriptCommand.RANDOM2;
-			
-		case "debug":
-			return ScriptCommand.DEBUG;
-		case "return":
-			return ScriptCommand.RETURN;
-		case "end":
-			return ScriptCommand.END;
-		case "die":
-			return ScriptCommand.DIE;
-		case "del":
-			return ScriptCommand.DEL;
-		case "kill":
-			return ScriptCommand.KIL;
-		case "hide":
-			return ScriptCommand.HIDE;
-		case "appear":
-			return ScriptCommand.APPEAR;
-		case "skip":
-			return ScriptCommand.SKIP;
-		case "effect":
-			return ScriptCommand.EFFECT;
-		case "event":
-			return ScriptCommand.EVENT;
-		case "sound":
-			return ScriptCommand.SOUND;
-		case "bgm":
-			return ScriptCommand.SOUND;
-		case "collide":
-			return ScriptCommand.COLLIDE;
-		case "stgclear":
-			return ScriptCommand.STGCLEAR;
-		case "shoot":
-			return ScriptCommand.SHOOT;
-		case "setshot":
-			return ScriptCommand.SETSHOT;
-		case "getid":
-			return ScriptCommand.GETID;
-		case "sspeed":
-			return ScriptCommand.SSPEED;
-		case "sspeedp":
-			return ScriptCommand.SSPEEDP;
-		case "sangle":
-			return ScriptCommand.SANGLE;
-		case "srotate":
-			return ScriptCommand.SROTATE;
-		case "vspeed":
-			return ScriptCommand.VSPEED;
-		case "vspeedp":
-			return ScriptCommand.VSPEEDP;
-		case "vrotate":
-			return ScriptCommand.VROTATE;
-		case "ctrlm":
-			return ScriptCommand.CTRLM;
-		case "ctrla":
-			return ScriptCommand.CTRLA;
-		case "dlg":
-			return ScriptCommand.DLG;
-		case "run":
-			return ScriptCommand.RUN;
-		case "prm":
-			return ScriptCommand.PRM;
-		case "pcoord":
-			return ScriptCommand.PCOORD;
-		case "pspeed":
-			return ScriptCommand.PSPEED;
-		case "pspeedp":
-			return ScriptCommand.PSPEEDP;
-		case "pos":
-			return ScriptCommand.POS;
-		case "speed":
-			return ScriptCommand.SPEED;
-		case "speedp":
-			return ScriptCommand.SPEEDP;
-		}
-
-		return null;
+	private ScriptCommand getCommand(String name) {
+		return ScriptCommand.getCommand(name);
 	}
 
 	private TreeElementType getTermType(ScriptTerm term) {
@@ -926,7 +696,7 @@ public class ScriptLoader
 	}
 
 	private void seekNextLine(String source) {
-		//‹ó‚Ìƒ‹[ƒv
+		//ç©ºã®ãƒ«ãƒ¼ãƒ—
 		while(!getToken(source).body.equals("\n") && pos < source.length());
 		
 		if(pos < source.length()) {
@@ -973,7 +743,7 @@ public class ScriptLoader
 				}
 				cur_type = type;
 			}
-			term = term + c;	//‚±‚ê‚ÅOK‚ç‚µ‚¢
+			term = term + c;	//ã“ã‚Œã§OKã‚‰ã—ã„
 			pos++;
 		}
 		skipSpace(source);
@@ -1001,7 +771,7 @@ public class ScriptLoader
 		return TokenType.UNKNOWN;
 	}
 
-	//”¼ŠpƒXƒy[ƒXAƒ^ƒu‚ğ”ò‚Î‚·
+	//åŠè§’ã‚¹ãƒšãƒ¼ã‚¹ã€ã‚¿ãƒ–ã‚’é£›ã°ã™
 	private void skipSpace(String source) {
 		while(pos < source.length()){
 			char c = source.charAt(pos);
@@ -1012,7 +782,7 @@ public class ScriptLoader
 		}
 	}
 	
-	//”¼ŠpƒXƒy[ƒXAƒ^ƒuA‰üs‚ğ”ò‚Î‚·
+	//åŠè§’ã‚¹ãƒšãƒ¼ã‚¹ã€ã‚¿ãƒ–ã€æ”¹è¡Œã‚’é£›ã°ã™
 	private void skipSpaceBreak(String source) {
 		while(pos < source.length()){
 			char c = source.charAt(pos);

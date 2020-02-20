@@ -1,3 +1,7 @@
+/*
+ * This class is obsolete and no longer used.
+ */
+
 package ueshooting.map;
 
 public class Tile {

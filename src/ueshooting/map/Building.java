@@ -1,3 +1,7 @@
+/*
+ * This class is obsolete and no longer used.
+ */
+
 package ueshooting.map;
 
 import java.util.*;

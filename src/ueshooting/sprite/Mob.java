@@ -2,7 +2,7 @@ package ueshooting.sprite;
 
 import java.awt.Image;
 
-import ueshooting.map.Building;
+//import ueshooting.map.Building;
 import ueshooting.map.GameObject;
 import ueshooting.map.Map;
 
@@ -15,12 +15,12 @@ public class Mob extends Sprite {
 	//protected Point[] through_point;
 	protected GameObject target;
 	//private int shot_interval = 30;
-	private int score = 200;
+	private int score = 200;	//“|‚µ‚½‚Æ‚«‚É“¾‚ç‚ê‚éƒXƒRƒA
 	
 	public Mob(int p1,int p2,int p3){
 		hp = 50;
 		offence = 10;
-		deffence = 10;
+		deffence = 0;
 		category = SpriteCategory.NPC;
 		type = p1;
 		x = p2;
@@ -75,9 +75,9 @@ public class Mob extends Sprite {
 		}
 	}*/
 	
-	void set_target(Building building){
+	/*void set_target(Building building){
 		target = building;
-	}
+	}*/
 	
 	/*private Point get_square_route_x(int x, int y, int t_x, int t_y) {
 		return new Point(t_x,(int)y);
@@ -88,7 +88,6 @@ public class Mob extends Sprite {
 	}
 
 	private Point get_block_building(int x, int y, int x2, int y2) {
-		// TODO Auto-generated method stub
 		return null;
 	}*/
 
@@ -139,26 +138,25 @@ public class Mob extends Sprite {
 	}
 
 	protected double calc_damage(double offence) {
-		System.out.printf("Got damage %f.", offence - getDeffence() / 2);
 		return Math.max(offence - getDeffence() / 2, 0);
 	}
 
-	protected double getDeffence() {
-		return 0;	//”pŽ~
+	public double getDeffence() {
+		return deffence;
 	}
 
 	protected void set_target(Mob mob) {
 		target = mob;
 	}
 
-	public void collision(Building building){
+	/*public void collision(Building building){
 		if(target != null)return;
 		if(building.belong == belong){
 			
 		}else{
 			set_target(building);
 		}
-	}
+	}*/
 	
 	@Override
 	public void action(Map map) {

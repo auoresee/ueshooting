@@ -13,7 +13,8 @@ public class TreeElement {
 		this.type = type;
 	}
 	
-	public void setParent(TreeElement parent){
+	//e‚Ì‘¤‚É‚Í’Ç‰Á‚³‚ê‚È‚¢
+	void setParent(TreeElement parent){
 		this.parent = parent;
 	}
 	
@@ -25,6 +26,13 @@ public class TreeElement {
 	public void addChild(TreeElement child){
 		child.setParent(this);
 		list.add(child);
+	}
+	
+	public void addChilds(List<TreeElement> childs){
+		for(int i = 0; i < childs.size(); i++) {
+			childs.get(i).setParent(this);
+		}
+		list.addAll(childs);
 	}
 	
 	public TreeElement getChild(int index){

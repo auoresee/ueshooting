@@ -1,14 +1,17 @@
 package ueshooting.script;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Stack;
 
+import ueshooting.main.GameMain;
 import ueshooting.map.Map;
 import ueshooting.sprite.ControlledByAI;
 import ueshooting.sprite.ControlledShot;
 import ueshooting.sprite.DelegatedAI;
 import ueshooting.sprite.Enemy;
+import ueshooting.sprite.EnemyGenerator;
 import ueshooting.sprite.Mob;
 import ueshooting.sprite.Shot;
 import ueshooting.sprite.Sprite;
@@ -21,22 +24,25 @@ import ueshooting.system.SystemMain;
 public class ScriptAI extends SpriteAI {
 	Script scriptTree;
 	Script globalTree;
-	//CommandProcessor cp = new CommandProcessor();
+	
+	Object scriptArg;
 	
 	
 	public ScriptAI(Enemy enemy, Script script, Script global, Map p) {
 		super(enemy,p);
 		scriptTree = script;
 		globalTree = global;
+		initGlobalVariables();
 	}
 	
-	public ScriptAI(Shot shot, Script script, Script global, Map p_map, double parameter) {
-		super(shot,p_map);
+	public ScriptAI(ControlledShot enemy, Script script, Script global, Map p, Object option) {
+		super(enemy,p);
 		scriptTree = script;
 		globalTree = global;
-		w = parameter;
+		initGlobalVariables();
+		scriptArg = option;
 	}
-	
+
 	public void spawn() {
 		TreeElement procedure = scriptTree.getNameProcedure("spawn");
 		if(procedure == null) return;
@@ -68,14 +74,13 @@ public class ScriptAI extends SpriteAI {
 		callRoutine(procedure);
 	}
 	
-	public int a, b, c, d, e, f, g, h, i, j, k, l;
-	public boolean m, n, o;
-	public double p, q, r, s, t, u, v, w, x, y, z;
-	public String B, C;
-	public int[] D = new int[50], E = new int[50];
-	public double[] F = new double[50], G = new double[50];
 	public Stack<Object> stack = new Stack<>();
 	public Stack<Object> parameter_stack = new Stack<>();
+	
+	//public List<ScriptVariable> globalVariables = new ArrayList<>();
+	//public List<ScriptVariable> localVariables = new ArrayList<>();
+	public HashMap<String, ScriptVariable> globalVariables;
+	public HashMap<String, ScriptVariable> currentLocalVariables = new HashMap<>();
 	
 	Stack<List<Object>> call_stack = new Stack<>();	//条件分岐やループ関連の情報を保存
 	Stack<Integer> loop_stack = new Stack<Integer>();
@@ -93,6 +98,23 @@ public class ScriptAI extends SpriteAI {
 		clean();
 	}
 	
+	private void initGlobalVariables() {
+		HashMap<String, ScriptVariable> ret = new HashMap<>();
+		ret.put("s_time", new ScriptVariableSpecial("s_time", DataType.INT, self));
+		ret.put("s_rotation", new ScriptVariableSpecial("s_rotation", DataType.DOUBLE, self));
+		ret.put("s_hp", new ScriptVariableSpecial("s_hp", DataType.INT, self));
+		ret.put("s_x", new ScriptVariableSpecial("s_x", DataType.DOUBLE, self));
+		ret.put("s_y", new ScriptVariableSpecial("s_y", DataType.DOUBLE, self));
+		ret.put("s_angle", new ScriptVariableSpecial("s_angle", DataType.DOUBLE, self));
+		ret.put("s_speed", new ScriptVariableSpecial("s_speed", DataType.DOUBLE, self));
+		ret.put("s_xspeed", new ScriptVariableSpecial("s_xspeed", DataType.DOUBLE, self));
+		ret.put("s_yspeed", new ScriptVariableSpecial("s_yspeed", DataType.DOUBLE, self));
+		ret.put("M_PI", new ScriptVariableSpecial("M_PI", DataType.DOUBLE, self));
+		ret.put("null", new ScriptVariableSpecial("null", DataType.ARRAY_INT, self));
+		
+		globalVariables = ret;
+	}
+
 	public void clean(){
 		if(!call_stack.isEmpty()) {
 			call_stack = new Stack<>();
@@ -123,6 +145,7 @@ public class ScriptAI extends SpriteAI {
 			if_end_count = (int) list.get(2);
 			loop_flag = (boolean) list.get(3);
 			loop_end_count = (int) list.get(4);
+			currentLocalVariables = (HashMap<String, ScriptVariable>) list.get(5);
 		}
 	}
 	
@@ -133,6 +156,7 @@ public class ScriptAI extends SpriteAI {
 		list.add(if_end_count);
 		list.add(loop_flag);
 		list.add(loop_end_count);
+		list.add(currentLocalVariables);
 		call_stack.add(list);
 	}
 	
@@ -288,33 +312,43 @@ public class ScriptAI extends SpriteAI {
 		Script currentTree = (Script)command.parent.parent;
 		switch((ScriptCommand)command.data){
 		case MOVE:
-			assignVariableValue((ScriptVariable)command.getChild(0).data, command.getChild(2));
+			assignVariableValue(getVariable((String)command.getChild(0).data), command.getChild(2));
 			break;
 		case PRINT:
 			System.out.println(command.getChild(0).data.toString());
 			break;
 		case PUSH:
-			stack.push(getValueOfElement(command.getChild(0)));
+			stack.push(getValueOfElement(command.getChild(0), DataType.ANY));
 			break;
 		case POP:
-			assignVariableValue((ScriptVariable)command.getChild(0).data, stack.pop());
+			assignVariableValue(getVariable((String)command.getChild(0).data), stack.pop());
 			break;
 		case STYPE:
-			if(getVariableType((ScriptVariable)command.getChild(0).data) == int.class){
-				assignVariableValue((ScriptVariable)command.getChild(0).data, 0);
+			if(getVariable((String)command.getChild(0).data).type == DataType.INT){
+				assignVariableValue(getVariable((String)command.getChild(0).data), 0);
 			}
-			if(getVariableType((ScriptVariable)command.getChild(0).data) == boolean.class){
-				assignVariableValue((ScriptVariable)command.getChild(0).data, 1);
+			if(getVariable((String)command.getChild(0).data).type == DataType.BOOLEAN){
+				assignVariableValue(getVariable((String)command.getChild(0).data), 1);
 			}
-			if(getVariableType((ScriptVariable)command.getChild(0).data) == double.class){
-				assignVariableValue((ScriptVariable)command.getChild(0).data, 2);
+			if(getVariable((String)command.getChild(0).data).type == DataType.DOUBLE){
+				assignVariableValue(getVariable((String)command.getChild(0).data), 2);
 			}
-			if(getVariableType((ScriptVariable)command.getChild(0).data) == String.class){
-				assignVariableValue((ScriptVariable)command.getChild(0).data, 3);
+			if(getVariable((String)command.getChild(0).data).type == DataType.STRING){
+				assignVariableValue(getVariable((String)command.getChild(0).data), 3);
 			}
-			if(getVariableType((ScriptVariable)command.getChild(0).data) == null){
-				throw new RuntimeException();
+			break;
+			
+		case DIM:
+			String typeName = (String) command.getChild(0).data;
+			DataType vtype = DataType.getType(typeName);
+			String vname = (String) command.getChild(1).data;
+			if(command.getChildNum() == 3) {
+				Object initVal = command.getChild(2).data;
+				currentLocalVariables.put(vname, new ScriptVariable(vname, vtype, initVal));
+			} else {
+				currentLocalVariables.put(vname, new ScriptVariable(vname, vtype));
 			}
+			
 			break;
 			
 		case CALL:
@@ -336,8 +370,8 @@ public class ScriptAI extends SpriteAI {
 			load_call_information();
 			break;
 		case JUMP:
-			if(logicalOperation(getValueOfElement(command.getChild(0)),
-					(String)command.getChild(1).data,getValueOfElement(command.getChild(2)))){
+			if(compareOperation(getValueOfElement(command.getChild(0), DataType.ANY),
+					(String)command.getChild(1).data,getValueOfElement(command.getChild(2), DataType.ANY))){
 				procedure = currentTree.getNameProcedure((String)command.getChild(3).data);
 				if(procedure == null){
 					if(currentTree != globalTree){
@@ -353,13 +387,13 @@ public class ScriptAI extends SpriteAI {
 			}
 			break;
 		case IF:
-			if(!logicalOperation(getValueOfElement(command.getChild(0)),
-					(String)command.getChild(1).data,getValueOfElement(command.getChild(2)))){
+			if(!compareOperation(getValueOfElement(command.getChild(0), DataType.ANY),
+					(String)command.getChild(1).data,getValueOfElement(command.getChild(2), DataType.ANY))){
 				if_end_count++;
 			}
 			break;
 		case BIF:
-			if(!(boolean)getValueOfElement(command.getChild(0))){
+			if(!(boolean)getValueOfElement(command.getChild(0),DataType.BOOLEAN)){
 				if_end_count++;
 			}
 			break;
@@ -367,8 +401,8 @@ public class ScriptAI extends SpriteAI {
 			break;
 		case ELSEIF:
 			if(if_end_count == 1){
-				if(logicalOperation(getValueOfElement(command.getChild(0)),
-						(String)command.getChild(1).data,getValueOfElement(command.getChild(2)))){
+				if(compareOperation(getValueOfElement(command.getChild(0), DataType.ANY),
+						(String)command.getChild(1).data,getValueOfElement(command.getChild(2), DataType.ANY))){
 					if_end_count = 0;
 				}
 			}
@@ -379,27 +413,27 @@ public class ScriptAI extends SpriteAI {
 		case IFEND:
 			break;
 		case WHILE:
-			if(!logicalOperation(getValueOfElement(command.getChild(0)),
-					(String)command.getChild(1).data,getValueOfElement(command.getChild(2)))){
+			if(!compareOperation(getValueOfElement(command.getChild(0), DataType.ANY),
+					(String)command.getChild(1).data,getValueOfElement(command.getChild(2), DataType.ANY))){
 				loop_end_count++;
 			}
 			loop_flag = false;
 			break;
 		case FOR:
 			if(loop_flag != true){
-				assignVariableValue((ScriptVariable)command.getChild(0).data, command.getChild(1));
-				if((double)getValueOfElement(command.getChild(0)) >= (double)getValueOfElement(command.getChild(3))){
+				assignVariableValue(getVariable((String)command.getChild(0).data), command.getChild(1));
+				if(getValueOfElementDouble(command.getChild(0)) >= getValueOfElementDouble(command.getChild(3))){
 					loop_end_count++;
 					break;
 				}
 			}
 			else{
 				loop_flag = false;
-				if((double)getValueOfElement(command.getChild(0)) >= (double)getValueOfElement(command.getChild(3))){
+				if(getValueOfElementDouble(command.getChild(0)) >= getValueOfElementDouble(command.getChild(3))){
 					loop_end_count++;
 					break;
 				}
-				assignVariableValue((ScriptVariable)command.getChild(0).data, (double)getValueOfElement(command.getChild(0)) + (double)getValueOfElement(command.getChild(3)));
+				assignVariableValue(getVariable((String)command.getChild(0).data), getValueOfElementDouble(command.getChild(0)) + getValueOfElementDouble(command.getChild(3)));
 			}
 			break;
 		case BREAK:
@@ -410,69 +444,31 @@ public class ScriptAI extends SpriteAI {
 			double value;
 			if(command.getChild(0).type == TreeElementType.L_BOOLEAN){
 				if(((String)command.getChild(1).data).equals("=")){
-					assignVariableValue((ScriptVariable)command.getChild(0).data, (boolean)getValueOfElement(command.getChild(2)));
+					assignVariableValue(getVariable((String)command.getChild(0).data), (boolean)getValueOfElement(command.getChild(2), DataType.BOOLEAN));
 					break;
 				}
 				if(((String)command.getChild(1).data).equals("=!")){
-					assignVariableValue((ScriptVariable)command.getChild(0).data, !(boolean)getValueOfElement(command.getChild(2)));
+					assignVariableValue(getVariable((String)command.getChild(0).data), !(boolean)getValueOfElement(command.getChild(2), DataType.BOOLEAN));
 					break;
 				}
 				else {
-					assignVariableValue((ScriptVariable)command.getChild(0).data, logicalOperation(getValueOfElement(command.getChild(0)),
-							(String)command.getChild(1).data,getValueOfElement(command.getChild(2))));
+					assignVariableValue(getVariable((String)command.getChild(0).data), compareOperation(getValueOfElement(command.getChild(0), DataType.ANY),
+							(String)command.getChild(1).data,getValueOfElement(command.getChild(2), DataType.ANY)));
+					break;
 				}
 			}
 			if(command.getChild(0).type == TreeElementType.L_STRING){
 				if(((String)command.getChild(1).data).equals("=")){
-					assignVariableValue((ScriptVariable)command.getChild(0).data, (String)getValueOfElement(command.getChild(2)));
+					assignVariableValue(getVariable((String)command.getChild(0).data), (String)getValueOfElement(command.getChild(2), DataType.STRING));
 				}
 				else if(((String)command.getChild(1).data).equals("+=")){
-					assignVariableValue((ScriptVariable)command.getChild(0).data, (String)getValueOfElement(command.getChild(0)) + (String)getValueOfElement(command.getChild(2)));
+					assignVariableValue(getVariable((String)command.getChild(0).data), (String)getValueOfElement(command.getChild(0), DataType.STRING) + (String)getValueOfElement(command.getChild(2), DataType.STRING));
 				}
 				break;
 			}
-			List<TreeElement> expression = command.getChild(2).list;
-			Stack<Double> operandStack = new Stack<>();
-			for(int i = 0;i < expression.size();i++){
-				TreeElement cur = expression.get(i);
-				if(cur.type == TreeElementType.L_DOUBLE || cur.type == TreeElementType.L_INT ||
-						cur.type == TreeElementType.VARIABLE){
-					operandStack.push(toDouble(getValueOfElement(cur)));
-				}
-				if(cur.type == TreeElementType.OPERATOR){
-					double value1;
-					double value2;
-					double result;
-					value2 = operandStack.pop();
-					value1 = operandStack.pop();
-					switch((String)cur.data){
-					case "+":
-						result = value1 + value2;
-						break;
-					case "-":
-						result = value1 - value2;
-						break;
-					case "*":
-						result = value1 * value2;
-						break;
-					case "/":
-						result = value1 / value2;
-						break;
-					case "^":
-						result = Math.pow(value1, value2);	//value1 の value2乗
-						break;
-					case "%":
-						result = value1 % value2;
-						break;
-					default:
-						throw new ScriptRuntimeException("Invalid operator");
-					}
-					operandStack.push(result);
-				}
-			}
 			
-			double value1 = toDouble(getValueOfElement(command.getChild(0)));
-			double value2 = operandStack.pop();		//最後にスタックに残った値が結果
+			double value1 = getValueOfElementDouble(command.getChild(0));
+			double value2 = (double) calcExpression(command.getChild(2).list);
 			double result;
 			switch((String)command.getChild(1).data){
 			case "=":
@@ -494,109 +490,74 @@ public class ScriptAI extends SpriteAI {
 				result = value1 % value2;
 				break;
 			default:
-				throw new ScriptRuntimeException("Invalid operator");
+				throw new ScriptRuntimeException("Invalid operator \"" + (String)command.getChild(1).data + "\"");
 			}
-			if(getVariableType((ScriptVariable)command.getChild(0).data) == int.class){
-				assignVariableValue((ScriptVariable)command.getChild(0).data, (int)result);
+			if(getVariable((String)command.getChild(0).data).type == DataType.INT){
+				assignVariableValue(getVariable((String)command.getChild(0).data), (int)result);
 			}
-			else if(getVariableType((ScriptVariable)command.getChild(0).data) == double.class){
-				assignVariableValue((ScriptVariable)command.getChild(0).data, result);
-			}
-			else {
-				for(;;);
+			else if(getVariable((String)command.getChild(0).data).type == DataType.DOUBLE){
+				assignVariableValue(getVariable((String)command.getChild(0).data), result);
 			}
 			break;
-		case LETV:
-			if((String)command.getChild(1).data == "=!"){
-				assignVariableValue((ScriptVariable)command.getChild(0).data, !(boolean)getValueOfElement(command.getChild(2)));
-				break;
-			}
-			value1 = (double)getValueOfElement(command.getChild(0));
-			value2 = (double)getValueOfElement(command.getChild(2));
-			switch((String)command.getChild(1).data){
-			case "+=":
-				result = value1 + value2;
-				break;
-			case "-=":
-				result = value1 - value2;
-				break;
-			case "*=":
-				result = value1 * value2;
-				break;
-			case "/=":
-				result = value1 / value2;
-				break;
-			case "%=":
-				result = value1 % value2;
-				break;
-			default:
-				throw new ScriptRuntimeException("Invalid operator");
-			}
-			if(getVariableType((ScriptVariable)command.getChild(0).data) == int.class){
-				assignVariableValue((ScriptVariable)command.getChild(0).data, (int)result);
-			}
-			else if(getVariableType((ScriptVariable)command.getChild(0).data) == double.class){
-				assignVariableValue((ScriptVariable)command.getChild(0).data, result);
-			}
-			break;
+			
 		case CMP:
-			assignVariableValue((ScriptVariable)command.getChild(0).data, (boolean)logicalOperation(getValueOfElement(command.getChild(1))
-					, (String)getValueOfElement(command.getChild(2)), getValueOfElement(command.getChild(3))));
+			assignVariableValue(getVariable((String)command.getChild(0).data), (boolean)compareOperation(getValueOfElement(command.getChild(1), DataType.ANY)
+					, (String)getValueOfElement(command.getChild(2), DataType.STRING), getValueOfElement(command.getChild(3), DataType.ANY)));
 			break;
 		case SQRT:
-			assignVariableValue((ScriptVariable)command.getChild(0).data, Math.sqrt((double)getValueOfElement(command.getChild(1))));
+			assignVariableValue(getVariable((String)command.getChild(0).data), Math.sqrt(getValueOfElementDouble(command.getChild(1))));
 			break;
 		case EXP:
-			assignVariableValue((ScriptVariable)command.getChild(0).data, Math.pow((double)getValueOfElement(command.getChild(1)),
-					(double)getValueOfElement(command.getChild(2))));
+			assignVariableValue(getVariable((String)command.getChild(0).data), Math.pow(getValueOfElementDouble(command.getChild(1)),
+					(double)getValueOfElement(command.getChild(2), DataType.DOUBLE)));
 			break;
 		case TORECT:
-			double radius = (double)getValueOfElement(command.getChild(0));
-			double theta = (double)getValueOfElement(command.getChild(1));
+			double radius = getValueOfElementDouble(command.getChild(2));
+			double theta = getValueOfElementDouble(command.getChild(3));
 			double pos_x = Deg.cos(theta) * radius;
 			double pos_y = Deg.sin(theta) * radius;
-			assignVariableValue(ScriptVariable.VAR_p, pos_x);
-			assignVariableValue(ScriptVariable.VAR_q, pos_y);
+			assignVariableValue(getVariable((String)command.getChild(0).data), pos_x);
+			assignVariableValue(getVariable((String)command.getChild(1).data), pos_y);
 			break;
 		case TOPOLAR:
-			pos_x = (double)getValueOfElement(command.getChild(0));
-			pos_y = (double)getValueOfElement(command.getChild(1));
+			pos_x = getValueOfElementDouble(command.getChild(2));
+			pos_y = getValueOfElementDouble(command.getChild(3));
 			radius = Math.sqrt(pos_x * pos_x + pos_y * pos_y);
 			theta = Deg.atan2(pos_y, pos_x);
-			assignVariableValue(ScriptVariable.VAR_p, radius);
-			assignVariableValue(ScriptVariable.VAR_q, theta);
+			assignVariableValue(getVariable((String)command.getChild(0).data), radius);
+			assignVariableValue(getVariable((String)command.getChild(1).data), theta);
 			break;
 		case DISTANCE:
-			pos_x = (double)getValueOfElement(command.getChild(1));
-			pos_y = (double)getValueOfElement(command.getChild(2));
-			assignVariableValue((ScriptVariable)command.getChild(0).data, Math.sqrt(pos_x * pos_x + pos_y * pos_y));
+			pos_x = getValueOfElementDouble(command.getChild(1));
+			pos_y = getValueOfElementDouble(command.getChild(2));
+			assignVariableValue(getVariable((String)command.getChild(0).data), Math.sqrt(pos_x * pos_x + pos_y * pos_y));
 			break;
 		case SIN:
-			assignVariableValue((ScriptVariable)command.getChild(0).data, Deg.sin(toDouble(getValueOfElement(command.getChild(1)))));
+			assignVariableValue(getVariable((String)command.getChild(0).data), Deg.sin(getValueOfElementDouble(command.getChild(1))));
 			break;
 		case COS:
-			assignVariableValue((ScriptVariable)command.getChild(0).data, Deg.cos(toDouble(getValueOfElement(command.getChild(1)))));
+			assignVariableValue(getVariable((String)command.getChild(0).data), Deg.cos(getValueOfElementDouble(command.getChild(1))));
 			break;
 		case TAN:
-			assignVariableValue((ScriptVariable)command.getChild(0).data, Deg.tan(toDouble(getValueOfElement(command.getChild(1)))));
+			assignVariableValue(getVariable((String)command.getChild(0).data), Deg.tan(getValueOfElementDouble(command.getChild(1))));
 			break;
 		case ATAN:
-			assignVariableValue((ScriptVariable)command.getChild(0).data, Deg.atan(toDouble(getValueOfElement(command.getChild(1)))));
+			assignVariableValue(getVariable((String)command.getChild(0).data), Deg.atan(getValueOfElementDouble(command.getChild(1))));
 			break;
 		case ATAN2:
-			assignVariableValue((ScriptVariable)command.getChild(0).data, Deg.atan2(toDouble(getValueOfElement(command.getChild(1))),toDouble(getValueOfElement(command.getChild(1)))));
+			assignVariableValue(getVariable((String)command.getChild(0).data), Deg.atan2(getValueOfElementDouble(command.getChild(1)),getValueOfElementDouble(command.getChild(1))));
 			break;
 		case LOG:
-			value = Math.log(toDouble(getValueOfElement(command.getChild(2)))) / Math.log(toDouble(getValueOfElement(command.getChild(1))));
-			assignVariableValue((ScriptVariable)command.getChild(0).data, value);
+			value = Math.log(getValueOfElementDouble(command.getChild(2))) / Math.log(getValueOfElementDouble(command.getChild(1)));
+			assignVariableValue(getVariable((String)command.getChild(0).data), value);
 			break;
 		case RANDOM:
-			assignVariableValue((ScriptVariable)command.getChild(0).data, Math.random());
+			assignVariableValue(getVariable((String)command.getChild(0).data), Math.random());
 			break;
 		case RANDOM2:
-			int a = (int) ((toDouble(getValueOfElement(command.getChild(2))) - toDouble(getValueOfElement(command.getChild(1)))) + toDouble(getValueOfElement(command.getChild(2))));
-			assignVariableValue((ScriptVariable)command.getChild(0).data, Math.random() * 
-					(toDouble(getValueOfElement(command.getChild(2))) - toDouble(getValueOfElement(command.getChild(1)))) + toDouble(getValueOfElement(command.getChild(1))));
+			int a = (int) ((getValueOfElementDouble(command.getChild(2)) - getValueOfElementDouble(command.getChild(1))) + getValueOfElementDouble(command.getChild(2)));
+			assignVariableValue(getVariable((String)command.getChild(0).data), Math.random() * 
+					(getValueOfElementDouble(command.getChild(2)) - getValueOfElementDouble(command.getChild(1))) + getValueOfElementDouble(command.getChild(1)));
 			break;
 			
 		case DEBUG:
@@ -617,10 +578,10 @@ public class ScriptAI extends SpriteAI {
 			((Enemy)self).hp = 0;
 			break;
 		case DEL:
-			map.getSprite((int) getValueOfElement(command.getChild(0))).time = Integer.MAX_VALUE;
+			map.getSprite(GameMain.frame.generator.getID(getValueOfElementInt(command.getChild(0)))).time = Integer.MAX_VALUE;
 			break;
 		case KIL:
-			((Mob)map.getSprite((int) getValueOfElement(command.getChild(0)))).hp = 0;
+			((Mob)map.getSprite(GameMain.frame.generator.getID(getValueOfElementInt(command.getChild(0))))).hp = 0;
 			break;
 		case HIDE:
 			self.visiblity = false;
@@ -630,16 +591,19 @@ public class ScriptAI extends SpriteAI {
 			break;
 		case SKIP:
 			//実際にフレームを飛ばす処理は未実装
-			self.skip_frame = (int)getValueOfElement(command.getChild(0));
+			self.skip_frame = getValueOfElementInt(command.getChild(0));
 			break;
 		case EFFECT:
 			//未実装
-			map.effect((int)getValueOfElement(command.getChild(0)), toDouble(getValueOfElement(command.getChild(1))),
-					toDouble(getValueOfElement(command.getChild(2))), toDouble(getValueOfElement(command.getChild(3))));
+			map.effect(getValueOfElementInt(command.getChild(0)), getValueOfElementDouble(command.getChild(1)),
+					getValueOfElementDouble(command.getChild(2)), getValueOfElementDouble(command.getChild(3)));
+			break;
+		case ACTIVATE:
+			((Mob) map.getSprite(GameMain.frame.generator.getID(getValueOfElementInt(command.getChild(0))))).create(1);
 			break;
 		case EVENT:
 		{
-			int id = (int)getValueOfElement(command.getChild(0));
+			int id = getValueOfElementInt(command.getChild(0));
 			if(id == 10){
 				map.startSpellCard((String) parameter_stack.pop());
 			}
@@ -649,106 +613,106 @@ public class ScriptAI extends SpriteAI {
 		}
 			break;
 		case SOUND:
-			SystemMain.soundManager.playClip((String)getValueOfElement(command.getChild(0)), (int)getValueOfElement(command.getChild(1)),toDouble(getValueOfElement(command.getChild(2))));
+			SystemMain.soundManager.playClip((String)getValueOfElement(command.getChild(0), DataType.STRING), getValueOfElementInt(command.getChild(1)),getValueOfElementDouble(command.getChild(2)));
 			break;
 		case BGM:
 			break;
 		case COLLIDE:
-			self.setCollisionFlag((boolean)getValueOfElement(command.getChild(0)));
+			self.setCollisionFlag((boolean)getValueOfElement(command.getChild(0), DataType.BOOLEAN));
 			break;
 		case STGCLEAR:
 			map.stageWin();
 			break;
 		case SHOOT:
 			Shot shot;
-			if((shot = map.getControlledShot((int)getValueOfElement(command.getChild(0)), (int)getValueOfElement(command.getChild(1)),
-					self.getX_double(), self.getY_double(), toDouble(getValueOfElement(command.getChild(4))), 1)) == null){
-				shot = new Shot((int)getValueOfElement(command.getChild(0)), (int)getValueOfElement(command.getChild(1)),
-					self.getX_double(), self.getY_double(), toDouble(getValueOfElement(command.getChild(4))), 1);
+			if((shot = map.getControlledShot(getValueOfElementInt(command.getChild(0)), getValueOfElementInt(command.getChild(1)),
+					self.getX_double(), self.getY_double(), getValueOfElementDouble(command.getChild(4)), 1)) == null){
+				shot = new Shot(getValueOfElementInt(command.getChild(0)), getValueOfElementInt(command.getChild(1)),
+					self.getX_double(), self.getY_double(), getValueOfElementDouble(command.getChild(4)), 1);
 			}
-			shot.shoot_angle(toDouble(getValueOfElement(command.getChild(2))), toDouble(getValueOfElement(command.getChild(3))));
+			shot.shoot_angle(getValueOfElementDouble(command.getChild(2)), getValueOfElementDouble(command.getChild(3)));
 			last_shot_id = map.setSprite(shot);
 			break;
 		case SETSHOT:
-			if((shot = map.getControlledShot((int)getValueOfElement(command.getChild(0)), (int)getValueOfElement(command.getChild(1)),
-					toDouble(getValueOfElement(command.getChild(2))), toDouble(getValueOfElement(command.getChild(3))),
-					toDouble(getValueOfElement(command.getChild(6))), 1)) == null){
-				shot = new Shot((int)getValueOfElement(command.getChild(0)), (int)getValueOfElement(command.getChild(1)),
-						toDouble(getValueOfElement(command.getChild(2))), toDouble(getValueOfElement(command.getChild(3))),
-						toDouble(getValueOfElement(command.getChild(6))), 1);
+			if((shot = map.getControlledShot(getValueOfElementInt(command.getChild(0)), getValueOfElementInt(command.getChild(1)),
+					getValueOfElementDouble(command.getChild(2)), getValueOfElementDouble(command.getChild(3)),
+					getValueOfElementDouble(command.getChild(6)), 1)) == null){
+				shot = new Shot(getValueOfElementInt(command.getChild(0)), getValueOfElementInt(command.getChild(1)),
+						getValueOfElementDouble(command.getChild(2)), getValueOfElementDouble(command.getChild(3)),
+						getValueOfElementDouble(command.getChild(6)), 1);
 			}
-			shot.shoot_angle(toDouble(getValueOfElement(command.getChild(4))), toDouble(getValueOfElement(command.getChild(5))));
+			shot.shoot_angle(getValueOfElementDouble(command.getChild(4)), getValueOfElementDouble(command.getChild(5)));
 			last_shot_id = map.setSprite(shot);
 			break;
 		case GETID:
-			assignVariableValue((ScriptVariable)command.getChild(0).data, last_shot_id);
+			assignVariableValue(getVariable((String)command.getChild(0).data), last_shot_id);
 			break;
 		case SSPEED:
-			Sprite sprite = map.getSprite((int)getValueOfElement(command.getChild(0)));
-			sprite.x_speed = (double)getValueOfElement(command.getChild(1));
-			sprite.y_speed = (double)getValueOfElement(command.getChild(2));
+			Sprite sprite = map.getSprite(getValueOfElementInt(command.getChild(0)));
+			sprite.x_speed = getValueOfElementDouble(command.getChild(1));
+			sprite.y_speed = getValueOfElementDouble(command.getChild(2));
 			break;
 		case SSPEEDP:
-			sprite = map.getSprite((int)getValueOfElement(command.getChild(0)));
-			sprite.x_speed = Deg.cos(toDouble(getValueOfElement(command.getChild(2)))) * toDouble(getValueOfElement(command.getChild(1)));
-			sprite.y_speed = Deg.sin(toDouble(getValueOfElement(command.getChild(2)))) * toDouble(getValueOfElement(command.getChild(1)));
+			sprite = map.getSprite(getValueOfElementInt(command.getChild(0)));
+			sprite.x_speed = Deg.cos(getValueOfElementDouble(command.getChild(2))) * getValueOfElementDouble(command.getChild(1));
+			sprite.y_speed = Deg.sin(getValueOfElementDouble(command.getChild(2))) * getValueOfElementDouble(command.getChild(1));
 			break;
 		case SANGLE:
-			sprite = map.getSprite((int)getValueOfElement(command.getChild(0)));
+			sprite = map.getSprite(getValueOfElementInt(command.getChild(0)));
 			radius = Math.sqrt(sprite.x_speed*sprite.x_speed + sprite.y_speed*sprite.y_speed);
-			theta = (double)getValueOfElement(command.getChild(0));
+			theta = getValueOfElementDouble(command.getChild(0));
 			sprite.x_speed = Deg.cos(theta) * radius;
 			sprite.y_speed = Deg.sin(theta) * radius;
 			break;
 		case SROTATE:
-			sprite = map.getSprite((int)getValueOfElement(command.getChild(0)));
-			sprite.rotation = toDouble(getValueOfElement(command.getChild(1)));
+			sprite = map.getSprite(getValueOfElementInt(command.getChild(0)));
+			sprite.rotation = getValueOfElementDouble(command.getChild(1));
 			break;
 		case VSPEED:
-			sprite = map.getSprite((int)getValueOfElement(command.getChild(0)));
-			assignVariableValue((ScriptVariable)command.getChild(1).data, sprite.x_speed);
-			assignVariableValue((ScriptVariable)command.getChild(2).data, sprite.y_speed);
+			sprite = map.getSprite(getValueOfElementInt(command.getChild(0)));
+			assignVariableValue(getVariable((String)command.getChild(1).data), sprite.x_speed);
+			assignVariableValue(getVariable((String)command.getChild(2).data), sprite.y_speed);
 			break;
 		case VSPEEDP:
-			sprite = map.getSprite((int)getValueOfElement(command.getChild(0)));
+			sprite = map.getSprite(getValueOfElementInt(command.getChild(0)));
 			radius = Math.sqrt(sprite.x_speed*sprite.x_speed + sprite.y_speed*sprite.y_speed);
 			theta = Deg.atan2(sprite.y_speed, sprite.x_speed);
-			assignVariableValue((ScriptVariable)command.getChild(1).data, radius);
-			assignVariableValue((ScriptVariable)command.getChild(2).data, theta);
+			assignVariableValue(getVariable((String)command.getChild(1).data), radius);
+			assignVariableValue(getVariable((String)command.getChild(2).data), theta);
 			break;
 		case VROTATE:
-			sprite = map.getSprite((int)getValueOfElement(command.getChild(0)));
-			assignVariableValue((ScriptVariable)command.getChild(1).data, sprite.rotation);
+			sprite = map.getSprite(getValueOfElementInt(command.getChild(0)));
+			assignVariableValue(getVariable((String)command.getChild(1).data), sprite.rotation);
 			break;
 		case CTRLM:
-			shot = (Shot) map.getSprite((int)getValueOfElement(command.getChild(0)));
-			shot.controlMovement((int)getValueOfElement(command.getChild(1)), toDouble(getValueOfElement(command.getChild(2))),
-					toDouble(getValueOfElement(command.getChild(3))),toDouble(getValueOfElement(command.getChild(4))));
+			shot = (Shot) map.getSprite(getValueOfElementInt(command.getChild(0)));
+			shot.controlMovement(getValueOfElementInt(command.getChild(1)), getValueOfElementDouble(command.getChild(2)),
+					getValueOfElementDouble(command.getChild(3)),getValueOfElementDouble(command.getChild(4)));
 			break;
 		case CTRLA:
-			shot = (Shot) map.getSprite((int)getValueOfElement(command.getChild(0)));
-			shot.controlAction((int)getValueOfElement(command.getChild(1)), toDouble(getValueOfElement(command.getChild(2))),
-					toDouble(getValueOfElement(command.getChild(3))),toDouble(getValueOfElement(command.getChild(4))));
+			shot = (Shot) map.getSprite(getValueOfElementInt(command.getChild(0)));
+			shot.controlAction(getValueOfElementInt(command.getChild(1)), getValueOfElementDouble(command.getChild(2)),
+					getValueOfElementDouble(command.getChild(3)),getValueOfElementDouble(command.getChild(4)));
 			break;
 			
 		case DLG:
-			map.delegate((int)getValueOfElement(command.getChild(0)),self,map,(int)getValueOfElement(command.getChild(1)));
+			map.delegate(getValueOfElementInt(command.getChild(0)),self,map,getValueOfElementInt(command.getChild(1)));
 			break;
 		case RUN:
 			//未実装
-			externalCall((String)getValueOfElement(command.getChild(0)));
+			externalCall((String)getValueOfElement(command.getChild(0), DataType.STRING));
 			break;
 		case PRM:
-			parameter_stack.push(getValueOfElement(command.getChild(0)));
+			parameter_stack.push(getValueOfElement(command.getChild(0), DataType.STRING));
 			break;
 			
 		case PCOORD:
-			assignVariableValue(ScriptVariable.VAR_p, map.getPlayer().getX_double());
-			assignVariableValue(ScriptVariable.VAR_q, map.getPlayer().getY_double());
+			assignVariableValue(getVariable((String)command.getChild(0).data), map.getPlayer().getX_double());
+			assignVariableValue(getVariable((String)command.getChild(1).data), map.getPlayer().getY_double());
 			break;
 		case PSPEED:
-			assignVariableValue(ScriptVariable.VAR_p, map.getPlayer().x_speed);
-			assignVariableValue(ScriptVariable.VAR_q, map.getPlayer().y_speed);
+			assignVariableValue(getVariable((String)command.getChild(0).data), map.getPlayer().x_speed);
+			assignVariableValue(getVariable((String)command.getChild(1).data), map.getPlayer().y_speed);
 			break;
 		case PSPEEDP:
 			pos_x = map.getPlayer().x_speed;
@@ -758,33 +722,90 @@ public class ScriptAI extends SpriteAI {
 			break;
 			
 		case POS:
-			assignVariableValue(ScriptVariable.VAR_X, toDouble(getValueOfElement(command.getChild(0))));
-			assignVariableValue(ScriptVariable.VAR_Y, toDouble(getValueOfElement(command.getChild(1))));
+			assignVariableValue(ScriptSpecialVariableType.S_X, getValueOfElementDouble(command.getChild(0)));
+			assignVariableValue(ScriptSpecialVariableType.S_Y, getValueOfElementDouble(command.getChild(1)));
 			break;
 		case SPEED:
-			assignVariableValue(ScriptVariable.VAR_I, toDouble(getValueOfElement(command.getChild(0))));
-			assignVariableValue(ScriptVariable.VAR_J, toDouble(getValueOfElement(command.getChild(1))));
+			assignVariableValue(ScriptSpecialVariableType.S_XSPEED, getValueOfElementDouble(command.getChild(0)));
+			assignVariableValue(ScriptSpecialVariableType.S_YSPEED, getValueOfElementDouble(command.getChild(1)));
 			break;
 		case SPEEDP:
-			assignVariableValue(ScriptVariable.VAR_V, toDouble(getValueOfElement(command.getChild(0))));
-			assignVariableValue(ScriptVariable.VAR_A, toDouble(getValueOfElement(command.getChild(1))));
+			assignVariableValue(ScriptSpecialVariableType.S_SPEED, getValueOfElementDouble(command.getChild(0)));
+			assignVariableValue(ScriptSpecialVariableType.S_ANGLE, getValueOfElementDouble(command.getChild(1)));
 			break;
+		case MOVETO:
+		{
+			double p1,p2,p3;
+			p1 = getValueOfElementDouble(command.getChild(0));
+			p2 = getValueOfElementDouble(command.getChild(1));
+			p3 = getValueOfElementDouble(command.getChild(2));
+			assignVariableValue(ScriptSpecialVariableType.S_XSPEED, (p1 - self.getX_double()) / p3);
+			assignVariableValue(ScriptSpecialVariableType.S_YSPEED, (p2 - self.getY_double()) / p3);
+			break;
+		}
 			
 		default:
 			throw new RuntimeException("Unexpected error");
 		}
 	}
 	
-	/**
-	 * is numeric literal/variable
-	 */
-	private boolean isNumber(TreeElement child) {
-		if(child.type == TreeElementType.VARIABLE){
-			@SuppressWarnings("rawtypes")
-			Class c = getVariableType((ScriptVariable)child.data);
-			return c == int.class || c == double.class;
+	private ScriptVariable getVariable(String data) throws ScriptRuntimeException {
+		ScriptVariable tmp = currentLocalVariables.get(data);
+		if(tmp == null)
+		{
+			tmp = globalVariables.get(data);
+			if(tmp == null) throw new ScriptRuntimeException("Undefined variable \""+data+"\"");
 		}
-		return child.data == int.class || child.data == double.class;
+	
+		return tmp;
+	}
+
+	/**
+	 * 式の値を求める
+	 * @param expression 式(逆ポーランド順)
+	 * @return 式の値
+	 * @throws ScriptRuntimeException 
+	 */
+	private Object calcExpression(List<TreeElement> expression) throws ScriptRuntimeException {
+		Stack<Double> operandStack = new Stack<>();
+		for(int i = 0;i < expression.size();i++){
+			TreeElement cur = expression.get(i);
+			if(cur.type == TreeElementType.L_DOUBLE || cur.type == TreeElementType.L_INT ||
+					cur.type == TreeElementType.VARIABLE){
+				operandStack.push(getValueOfElementDouble(cur));
+			}
+			if(cur.type == TreeElementType.OPERATOR){
+				double value1;
+				double value2;
+				double result;
+				value2 = operandStack.pop();
+				value1 = operandStack.pop();
+				switch((String)cur.data){
+				case "+":
+					result = value1 + value2;
+					break;
+				case "-":
+					result = value1 - value2;
+					break;
+				case "*":
+					result = value1 * value2;
+					break;
+				case "/":
+					result = value1 / value2;
+					break;
+				case "^":
+					result = Math.pow(value1, value2);	//value1 の value2乗
+					break;
+				case "%":
+					result = value1 % value2;
+					break;
+				default:
+					throw new ScriptRuntimeException("Invalid operator");
+				}
+				operandStack.push(result);
+			}
+		}
+		return operandStack.pop();		//最後にスタックに残った値が結果
 	}
 
 	private double toDouble(Object value) {
@@ -799,7 +820,7 @@ public class ScriptAI extends SpriteAI {
 		
 	}
 
-	private boolean logicalOperation(Object value1, String operator,
+	private boolean compareOperation(Object value1, String operator,
 			Object value2) {
 		switch(operator){
 		case "==":
@@ -844,10 +865,21 @@ public class ScriptAI extends SpriteAI {
 		return false;
 	}
 
-	private Object getValueOfElement(TreeElement element) throws ScriptRuntimeException {
+	/**
+	 * 要素の値を取得
+	 * 変数ならその値を、リテラルならそのまま値を返す
+	 * @param element 要素
+	 * @return
+	 * @throws ScriptRuntimeException
+	 */
+	private Object getValueOfElementNoCheck(TreeElement element) throws ScriptRuntimeException {
 		Object ret;
 		if(element.type == TreeElementType.VARIABLE){
-			ret = getValueOfVariable((ScriptVariable)element.data);
+			ret = getVariable((String)element.data).getValue();
+			if(ret.getClass() == Integer.class) ret = (int)ret;
+		}
+		else if(element.type == TreeElementType.EXPRESSION){
+			ret = calcExpression(element.list);
 			if(ret.getClass() == Integer.class) ret = (int)ret;
 		}
 		else{
@@ -856,120 +888,165 @@ public class ScriptAI extends SpriteAI {
 		}
 		return ret;
 	}
-
-	private Object getValueOfVariable(ScriptVariable var) throws ScriptRuntimeException {
-		switch(var){
-		case VAR_a:
-			return a;
-		case VAR_b:
-			return b;
-		case VAR_c:
-			return c;
-		case VAR_d:
-			return d;
-		case VAR_e:
-			return e;
-		case VAR_f:
-			return f;
-		case VAR_g:
-			return g;
-		case VAR_h:
-			return h;
-		case VAR_i:
-			return i;
-		case VAR_j:
-			return j;
-		case VAR_k:
-			return k;
-		case VAR_l:
-			return l;
-		case VAR_T:
-			return self.time;
-		case VAR_D:
-			return D[var.index];
-		case VAR_E:
-			return E[var.index];
-
-		case VAR_m:
-			return m;
-		case VAR_n:
-			return n;
-		case VAR_o:
-			return o;
+	
+	/**
+	 * 要素の値を取得
+	 * 変数ならその値を、リテラルならそのまま値を返す
+	 * @param element 要素
+	 * @return
+	 * @throws ScriptRuntimeException
+	 */
+	private Object getValueOfElement(TreeElement element, DataType type) throws ScriptRuntimeException {
+		Object tmp = getValueOfElementNoCheck(element);
+		if(!typeCheck(type, tmp)) throw new ScriptRuntimeException(String.format("Incompatible parameter: (%s) = (%s)", type.toString(), tmp.getClass().getName()));
+		return tmp;
+	}
+	
+	/**
+	 * 要素の値を取得
+	 * 変数ならその値を、リテラルならそのまま値を返す
+	 * @param element 要素
+	 * @return
+	 * @throws ScriptRuntimeException
+	 */
+	private double getValueOfElementDouble(TreeElement element) throws ScriptRuntimeException {
+		return ((Number)getValueOfElement(element, DataType.DOUBLE)).doubleValue();
+	}
+	
+	/**
+	 * 要素の値を取得
+	 * 変数ならその値を、リテラルならそのまま値を返す
+	 * @param element 要素
+	 * @return
+	 * @throws ScriptRuntimeException
+	 */
+	private int getValueOfElementInt(TreeElement element) throws ScriptRuntimeException {
+		return ((Number)getValueOfElement(element, DataType.INT)).intValue();
+	}
+	
+	private boolean typeCheck(DataType type, Object src) {
+		switch(type) {
+		case INT:
+			if(src instanceof Integer || src instanceof Double) {		//double->intのキャストも自動で行う
+				return true;
+			}
+			break;
 			
-		case VAR_p:
-			return p;
-		case VAR_q:
-			return q;
-		case VAR_r:
-			return r;
-		case VAR_s:
-			return s;
-		case VAR_t:
-			return t;
-		case VAR_u:
-			return u;
-		case VAR_v:
-			return v;
-		case VAR_w:
-			return w;
-		case VAR_x:
-			return x;
-		case VAR_y:
-			return y;
-		case VAR_z:
-			return z;
-		case VAR_R:
+		case DOUBLE:
+			if(src instanceof Integer || src instanceof Double) {
+				return true;
+			}
+			break;
+			
+		case STRING:
+			if(src instanceof String) {
+				return true;
+			}
+			break;
+			
+		case BOOLEAN:
+			if(src instanceof Boolean) {
+				return true;
+			}
+			break;
+			
+		case ARRAY_INT:
+		case ARRAY_DOUBLE:
+		case ARRAY_STRING:
+		case ARRAY_BOOLEAN:
+			if(src instanceof List<?>) {
+				return true;
+			}
+			break;
+			
+		case ANY:
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * 変数の値を取得
+	 * @param var 変数
+	 * @return
+	 * @throws ScriptRuntimeException
+	 */
+	private Object getValueOfVariable(ScriptSpecialVariableType var) throws ScriptRuntimeException {
+		switch(var){
+		case S_TIME:
+			return self.time;
+
+		case S_ROTATION:
 			if(!(self instanceof Enemy)){
 				throw new ScriptRuntimeException("Unsupported operation for this sprite");
 			}
 			return ((Enemy)self).rotation;
-		case VAR_H:
+		case S_HP:
 			if(!(self instanceof Enemy)){
 				throw new ScriptRuntimeException("Unsupported operation for this sprite");
 			}
 			return ((Enemy)self).hp;
-		case VAR_I:
+		case S_XSPEED:
 			return self.x_speed;
-		case VAR_J:
+		case S_YSPEED:
 			return self.y_speed;
-		case VAR_P:
+		case M_PI:
 			return Math.PI;
-		case VAR_A:
+		case S_ANGLE:
 			return Deg.atan2(self.y_speed, self.x_speed);
-		case VAR_V:
+		case S_SPEED:
 			return Math.sqrt(self.x_speed * self.x_speed + self.y_speed * self.y_speed);
-		case VAR_X:
+		case S_X:
 			return self.getX_double();
-		case VAR_Y:
+		case S_Y:
 			return self.getY_double();
-		case VAR_B:
-			return B;
-		case VAR_C:
-			return C;
-		case VAR_F:
-			return F[var.index];
-		case VAR_G:
-			return G[var.index];
-		case VAR_N:
+		case VAR_NULL:
 			return null;
 		}
 		return null;
 	}
 
-	private void assignVariableValue(ScriptVariable dest, TreeElement src) throws ScriptRuntimeException {
-		if(src.type == TreeElementType.VARIABLE){
-			if(getVariableType(dest) != getVariableType((ScriptVariable)src.data)) {
-				throw new RuntimeException("Unexpected exception");
-			}
-			assignVariableValue(dest, getValueOfVariable((ScriptVariable)src.data));
+	private void assignVariableElementValue(ScriptSpecialVariableType dest, TreeElement src) throws ScriptRuntimeException {
+		assignVariableValue(dest, src.data);
+	}
+	
+	private void assignVariableValue(ScriptVariable var, Object data) throws ScriptRuntimeException {
+		Object src = data;
+		if(data instanceof TreeElement) {
+			src = ((TreeElement)data).data;
 		}
-		else{
-			assignVariableValue(dest, src.data);
+		if(!typeCheck(var,src)) {
+			throw new ScriptRuntimeException(String.format("Incompatible assignment: (%s) = (%s)", var.type.toString(), src.getClass().getName()));
+		}
+		switch(var.type) {
+		case INT:
+			var.setValue(((Number)src).intValue());
+			break;
+			
+		case DOUBLE:
+			var.setValue(((Number)src).doubleValue());
+			break;
+			
+		case STRING:
+		case BOOLEAN:
+		case ARRAY_INT:
+		case ARRAY_DOUBLE:
+		case ARRAY_STRING:
+		case ARRAY_BOOLEAN:
+			var.setValue(src);
 		}
 	}
 
-	private void assignVariableValue(ScriptVariable dest, Object src) throws ScriptRuntimeException {
+	private boolean typeCheck(ScriptVariable var, Object src) {
+		return typeCheck(var.type, src);
+	}
+
+	private void assignVariableValue(ScriptSpecialVariableType dest, Object src) throws ScriptRuntimeException {
+		if(src instanceof TreeElement) {
+			assignVariableElementValue(dest, (TreeElement) src);
+			return;
+		}
+		
 		if(getVariableType(dest) == int.class && src.getClass() != Integer.class && src.getClass() != Double.class ||
 			getVariableType(dest) == boolean.class && src.getClass() != Boolean.class ||
 			getVariableType(dest) == double.class && src.getClass() != Double.class && src.getClass() != Integer.class ||
@@ -977,208 +1054,71 @@ public class ScriptAI extends SpriteAI {
 			throw new RuntimeException("Unexpected exception");
 		}
 		switch(dest){
-		case VAR_a:
-			a = ((Number)src).intValue();
-			break;
-		case VAR_b:
-			b = ((Number)src).intValue();
-			break;
-		case VAR_c:
-			c = ((Number)src).intValue();
-			break;
-		case VAR_d:
-			d = ((Number)src).intValue();
-			break;
-		case VAR_e:
-			e = ((Number)src).intValue();
-			break;
-		case VAR_f:
-			f = ((Number)src).intValue();
-			break;
-		case VAR_g:
-			g = ((Number)src).intValue();
-			break;
-		case VAR_h:
-			h = ((Number)src).intValue();
-			break;
-		case VAR_i:
-			i = ((Number)src).intValue();
-			break;
-		case VAR_j:
-			j = ((Number)src).intValue();
-			break;
-		case VAR_k:
-			k = ((Number)src).intValue();
-			break;
-		case VAR_l:
-			l = ((Number)src).intValue();
-			break;
-		case VAR_T:
+		case S_TIME:
 			self.time = ((Number)src).intValue();
 			break;
-		case VAR_D:
-			D[dest.index] = ((Number)src).intValue();
-			break;
-		case VAR_E:
-			E[dest.index] = ((Number)src).intValue();
-			break;
 			
-		case VAR_m:
-			m = (boolean) src;
-			break;
-		case VAR_n:
-			n = (boolean) src;
-			break;
-		case VAR_o:
-			o = (boolean) src;
-			break;
-			
-		case VAR_p:
-			if(self instanceof ControlledShot){
-				p = 0;
-			}
-			p = ((Number)src).doubleValue();
-			break;
-		case VAR_q:
-			q = ((Number)src).doubleValue();
-			break;
-		case VAR_r:
-			r = ((Number)src).doubleValue();
-			break;
-		case VAR_s:
-			s = ((Number)src).doubleValue();
-			break;
-		case VAR_t:
-			t = ((Number)src).doubleValue();
-			break;
-		case VAR_u:
-			u = ((Number)src).doubleValue();
-			break;
-		case VAR_v:
-			v = ((Number)src).doubleValue();
-			break;
-		case VAR_w:
-			w = ((Number)src).doubleValue();
-			break;
-		case VAR_x:
-			x = (double) src;
-			break;
-		case VAR_y:
-			y = ((Number)src).doubleValue();
-			break;
-		case VAR_z:
-			z = ((Number)src).doubleValue();
-			break;
-		case VAR_R:
+		case S_ROTATION:
 			if(!(self instanceof Enemy)){
 				throw new ScriptRuntimeException("Unsupported operation for this sprite");
 			}
 			((Enemy)self).rotation = ((Number)src).doubleValue();
 			break;
-		case VAR_H:
+		case S_HP:
 			if(!(self instanceof Enemy)){
 				throw new ScriptRuntimeException("Unsupported operation for this sprite");
 			}
 			((Enemy)self).hp = ((Number)src).doubleValue();
 			break;
-		case VAR_I:
+		case S_XSPEED:
 			self.x_speed = ((Number)src).doubleValue();
 			break;
-		case VAR_J:
+		case S_YSPEED:
 			self.y_speed = ((Number)src).doubleValue();
 			break;
-		case VAR_P:
+		case M_PI:
 			throw new ScriptRuntimeException("Assignment to a constance");
-		case VAR_A:
+		case S_ANGLE:
 			double speed = Math.sqrt(self.x_speed * self.x_speed + self.y_speed * self.y_speed);
 			self.x_speed = Deg.cos(((Number)src).doubleValue()) * speed;
 			self.y_speed = Deg.sin(((Number)src).doubleValue()) * speed;
 			break;
-		case VAR_V:
+		case S_SPEED:
 			double angle = Deg.atan2(self.y_speed, self.x_speed);
 			self.x_speed = Deg.cos(angle) * ((Number)src).doubleValue();
 			self.y_speed = Deg.sin(angle) * ((Number)src).doubleValue();
 			break;
-		case VAR_X:
+		case S_X:
 			self.setX(((Number)src).doubleValue());
 			break;
-		case VAR_Y:
+		case S_Y:
 			self.setY(((Number)src).doubleValue());
 			break;
-		case VAR_F:
-			F[dest.index] = ((Number)src).doubleValue();
-			break;
-		case VAR_G:
-			G[dest.index] = ((Number)src).doubleValue();
-			break;
 			
-		case VAR_B:
-			B = (String) src;
-			break;
-		case VAR_C:
-			C = (String) src;
-			break;
-			
-		case VAR_N:
+		case VAR_NULL:
 			//どこにも代入しない
 			break;
 		}
 	}
 	
 	@SuppressWarnings("rawtypes")
-	private Class getVariableType(ScriptVariable var) {
+	private Class getVariableType(ScriptSpecialVariableType var) {
 		switch(var){
-		case VAR_a:
-		case VAR_b:
-		case VAR_c:
-		case VAR_d:
-		case VAR_e:
-		case VAR_f:
-		case VAR_g:
-		case VAR_h:
-		case VAR_i:
-		case VAR_j:
-		case VAR_k:
-		case VAR_l:
-		case VAR_T:
-		case VAR_D:
-		case VAR_E:
+		case S_TIME:
 			return int.class;
 			
-		case VAR_m:
-		case VAR_n:
-		case VAR_o:
-			return boolean.class;
-			
-		case VAR_p:
-		case VAR_q:
-		case VAR_r:
-		case VAR_s:
-		case VAR_t:
-		case VAR_u:
-		case VAR_v:
-		case VAR_w:
-		case VAR_x:
-		case VAR_y:
-		case VAR_z:
-		case VAR_A:
-		case VAR_R:
-		case VAR_H:
-		case VAR_I:
-		case VAR_J:
-		case VAR_P:
-		case VAR_V:
-		case VAR_X:
-		case VAR_Y:
-		case VAR_F:
-		case VAR_G:
+		case S_ANGLE:
+		case S_ROTATION:
+		case S_HP:
+		case S_XSPEED:
+		case S_YSPEED:
+		case M_PI:
+		case S_SPEED:
+		case S_X:
+		case S_Y:
 			return double.class;
 			
-		case VAR_B:
-		case VAR_C:
-			return String.class;
-			
-		case VAR_N:
+		case VAR_NULL:
 			return null;
 		}
 		return null;
